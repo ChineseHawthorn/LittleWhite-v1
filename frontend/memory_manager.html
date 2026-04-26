@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>记忆管理小道具</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="icon" href="/images/memory_favicon.ico">
+<style>
+:root{
+  --bg0:#f0f2f5;--bg1:#fff;--bg2:#f5f6f8;--bg3:#eaedf1;
+  --accent:#3b82f6;--accent2:#2563eb;
+  --txt0:#111827;--txt1:#4b5563;--txt2:#9ca3af;
+  --border:rgba(0,0,0,.08);
+  --err:#dc2626;--ok:#059669;
+  --mem:#7c3aed;--hist:#0891b2;--cap:#f59e0b;--ann:#ec4899;
+  --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg0);color:var(--txt0);min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+}
+.page-container{width:100%;max-width:2000px;}
+
+/* ── Header ── */
+.header{
+  background:var(--bg1);border-bottom:1px solid var(--border);
+  padding:16px 28px;display:flex;align-items:center;gap:14px;
+  width:100%;justify-content:center;
+}
+.header h1{font-size:17px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}
+.header .sub{font-size:12px;color:var(--txt2)}
+.btn-refresh{
+  background:none;border:none;cursor:pointer;padding:4px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;transition:background .2s;
+}
+.btn-refresh:hover{background:var(--bg3);}
+.btn-refresh img{width:28px;height:28px;display:block;}
+@keyframes spin-once{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.btn-refresh.spinning img{animation:spin-once .5s ease-in-out;}
+
+/* ── Stats bar ── */
+.stats{
+  display:flex;gap:10px;padding:14px 28px;flex-wrap:wrap;
+  width:100%;justify-content:center;
+}
+.stat-chip{
+  display:flex;align-items:center;gap:7px;
+  padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;
+  border:1px solid transparent;
+}
+.stat-chip i{font-size:14px;margin-right:2px;}
+.stat-chip .n{font-size:18px;font-weight:800}
+
+/* ── Tabs ── */
+.tabs{
+  display:flex;gap:0;padding:0 28px;border-bottom:2px solid var(--border);
+  width:100%;justify-content:center;max-width:800px;margin:0 auto;
+}
+.tab{
+  padding:11px 20px;font-size:13px;font-weight:600;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-2px;
+  color:var(--txt2);transition:all .2s;display:flex;align-items:center;gap:6px;
+}
+.tab:hover{color:var(--txt1)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab .cnt{
+  background:var(--bg3);border-radius:20px;padding:1px 7px;
+  font-size:10px;font-weight:700;
+}
+.tab.active .cnt{background:var(--accent);color:#fff}
+
+/* ── Content ── */
+.content{
+  padding:20px 28px;max-width:1000px;
+  width:100%;margin:0 auto;
+}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.search{
+  flex:1;padding:8px 13px 8px 38px;background:var(--bg1);border:1px solid var(--border);
+  border-radius:8px;font-size:13px;color:var(--txt0);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:12px center;
+}
+.search:focus{outline:none;border-color:var(--accent)}
+.btn-del-all{
+  padding:7px 14px;background:rgba(239,68,68,.1);color:var(--err);
+  border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;
+  cursor:pointer;font-weight:600;transition:.2s;white-space:nowrap;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-del-all:hover{background:rgba(239,68,68,.2)}
+
+.items{display:flex;flex-direction:column;gap:8px}
+.item{
+  background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius);
+  padding:13px 16px;display:flex;align-items:flex-start;gap:12px;
+  animation:fadeIn .25s ease;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.item-left{flex:1;min-width:0}
+.item-main{font-size:13px;line-height:1.6;color:var(--txt0);word-break:break-word}
+.item-meta{font-size:11px;color:var(--txt2);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.badge{
+  display:inline-flex;align-items:center;gap:3px;padding:1px 8px;border-radius:20px;
+  font-size:10px;font-weight:700;
+}
+.btn-del{
+  flex-shrink:0;padding:5px 11px;background:rgba(239,68,68,.08);
+  color:var(--err);border:1px solid rgba(239,68,68,.15);
+  border-radius:7px;font-size:12px;cursor:pointer;transition:.2s;
+  display:flex;align-items:center;gap:4px;
+}
+.btn-del:hover{background:rgba(239,68,68,.18)}
+
+.empty{text-align:center;padding:52px 20px;color:var(--txt2);font-size:13px;}
+.empty .icon{font-size:40px;margin-bottom:10px;opacity:.8}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.item.mem {border-left:3px solid var(--mem)}
+.item.hist{border-left:3px solid var(--hist)}
+.item.cap {border-left:3px solid var(--cap)}
+.item.ann {border-left:3px solid var(--ann)}
+
+.role-user{background:rgba(59,130,246,.1);color:var(--accent)}
+.role-assistant{background:rgba(124,58,237,.1);color:var(--mem)}
+.item.cap.opened{opacity:.65}
+
+#tab-mem .fa-star{color:#E8C013 !important;}
+.icon-mem{color:var(--mem);}
+.icon-hist{color:var(--hist);}
+.icon-cap{color:var(--cap);}
+.icon-ann{color:var(--ann);}
+
+/* ── Pagination ── */
+.pagination{
+  display:flex;align-items:center;gap:4px;justify-content:center;
+  margin-top:18px;padding-bottom:6px;flex-wrap:wrap;
+}
+.pg-btn{
+  min-width:32px;height:32px;border:1px solid var(--border);
+  background:var(--bg1);color:var(--txt1);border-radius:7px;
+  font-size:13px;cursor:pointer;transition:.15s;
+  display:flex;align-items:center;justify-content:center;padding:0 8px;
+}
+.pg-btn:hover:not([disabled]):not(.active){background:#d1d5db;color:var(--txt0);border-color:rgba(0,0,0,.15);}
+.pg-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.pg-btn.active:hover{background:var(--accent2);}
+.pg-btn[disabled]{opacity:.4;cursor:not-allowed;}
+.pg-ellipsis{font-size:13px;color:var(--txt2);padding:0 2px;line-height:32px;}
+.pg-info{font-size:12px;color:var(--txt2);margin-left:6px;white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="page-container">
+  <div class="header">
+    <div>
+      <h1>
+        <img src="/images/memory_favicon.png" alt="图标" style="width:24px;height:24px;vertical-align:middle;margin-right:8px;">
+        记忆管理小道具
+      </h1>
+    </div>
+    <button class="btn-refresh" onclick="triggerRefresh(this)"><img src="/images/refresh.png" alt="刷新"></button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('mem')" id="tab-mem">
+      <i class="fa-solid fa-star"></i> 重要记忆 <span class="cnt" id="cnt-mem">0</span>
+    </div>
+    <div class="tab" onclick="switchTab('hist')" id="tab-hist">
+      <i class="fas fa-book-open icon-hist"></i> 历史消息 <span class="cnt" id="cnt-hist">0</span>
+    </div>
+    <div class="tab" onclick="switchTab('cap')" id="tab-cap">
+      <i class="fas fa-hourglass-half icon-cap"></i> 时间胶囊 <span class="cnt" id="cnt-cap">0</span>
+    </div>
+    <div class="tab" onclick="switchTab('ann')" id="tab-ann">
+      <i class="fas fa-heart icon-ann"></i> 纪念日 <span class="cnt" id="cnt-ann">0</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- 重要记忆 -->
+    <div class="tab-panel active" id="panel-mem">
+      <div class="toolbar">
+        <input class="search" placeholder="搜索记忆…" oninput="filter('mem',this.value)">
+        <button class="btn-del-all" onclick="deleteAll('mem')"><i class="fas fa-trash-alt"></i> 清空全部</button>
+      </div>
+      <div class="items" id="list-mem"></div>
+      <div id="pg-mem"></div>
+    </div>
+
+    <!-- 历史消息 -->
+    <div class="tab-panel" id="panel-hist">
+      <div class="toolbar">
+        <input class="search" placeholder="搜索历史…" oninput="filter('hist',this.value)">
+        <button class="btn-del-all" onclick="deleteAll('hist')"><i class="fas fa-trash-alt"></i> 清空全部</button>
+      </div>
+      <div class="items" id="list-hist"></div>
+      <div id="pg-hist"></div>
+    </div>
+
+    <!-- 时间胶囊 -->
+    <div class="tab-panel" id="panel-cap">
+      <div class="toolbar">
+        <input class="search" placeholder="搜索胶囊…" oninput="filter('cap',this.value)">
+        <button class="btn-del-all" onclick="deleteAll('cap')"><i class="fas fa-trash-alt"></i> 清空全部</button>
+      </div>
+      <div class="items" id="list-cap"></div>
+      <div id="pg-cap"></div>
+    </div>
+
+    <!-- 纪念日 -->
+    <div class="tab-panel" id="panel-ann">
+      <div class="toolbar">
+        <input class="search" placeholder="搜索纪念日…" oninput="filter('ann',this.value)">
+        <button class="btn-del-all" onclick="deleteAll('ann')"><i class="fas fa-trash-alt"></i> 清空全部</button>
+      </div>
+      <div class="items" id="list-ann"></div>
+      <div id="pg-ann"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 优先用同源相对路径（通过 /manage 访问时），回退到本地直连
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? ''          // 同源：主界面与道具共享 localStorage
+  : 'http://localhost:8000';
+const PAGE_SIZE = 20;
+
+const CHAT_HISTORY_KEY = 'xb_chat_history';  // 与主界面 index.html 保持一致
+
+/** 清除所有后端会话（in-memory context window）*/
+async function clearAllSessions() {
+  try {
+    const r = await fetch(`${API}/api/sessions`);
+    const d = await r.json();
+    await Promise.all((d.sessions || []).map(sid =>
+      fetch(`${API}/api/sessions/${sid}`, { method: 'DELETE' })
+    ));
+  } catch {}
+}
+
+/** 清除主界面 localStorage 聊天记录，并广播给已打开的主界面标签页 */
+function clearMainPageChat() {
+  try {
+    localStorage.removeItem(CHAT_HISTORY_KEY);
+    // storage 事件只在 *其他* 标签页触发，所以额外写一个哨兵值触发跨标签同步
+    localStorage.setItem('xb_chat_cleared', Date.now().toString());
+    localStorage.removeItem('xb_chat_cleared');
+  } catch {}
+}
+
+let data = { mem: [], hist: [], cap: [], ann: [] };
+const _pages = { mem: 1, hist: 1, cap: 1, ann: 1 };
+const _lists  = { mem: [], hist: [], cap: [], ann: [] };
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(s)));
+  return d.innerHTML;
+}
+
+function fmt(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleString('zh-CN', {
+      year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit',
+    });
+  } catch { return iso; }
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const parts = dateStr.split('-');
+  const now = new Date(); now.setHours(0,0,0,0);
+  let target;
+  if (parts.length === 2) {
+    target = new Date(now.getFullYear(), parseInt(parts[0])-1, parseInt(parts[1]));
+    if (target < now) target.setFullYear(now.getFullYear()+1);
+  } else {
+    target = new Date(dateStr); target.setHours(0,0,0,0);
+  }
+  if (isNaN(target)) return null;
+  return Math.ceil((target - now) / 86400000);
+}
+
+// ── Pagination ──
+function paginate(type, list) {
+  _lists[type] = list;
+  const total = Math.ceil(list.length / PAGE_SIZE) || 1;
+  if (_pages[type] > total) _pages[type] = total;
+  return list.slice((_pages[type] - 1) * PAGE_SIZE, _pages[type] * PAGE_SIZE);
+}
+
+function goPage(type, p) {
+  const total = Math.ceil(_lists[type].length / PAGE_SIZE) || 1;
+  _pages[type] = Math.max(1, Math.min(p, total));
+  const renders = { mem: renderMem, hist: renderHist, cap: renderCap, ann: renderAnn };
+  renders[type](_lists[type]);
+}
+
+function setPagination(type, total) {
+  const pgEl = document.getElementById(`pg-${type}`);
+  if (!pgEl) return;
+  const page = _pages[type];
+  const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+  if (totalPages <= 1) { pgEl.innerHTML = ''; return; }
+
+  let btns = '';
+  btns += `<button class="pg-btn" ${page === 1 ? 'disabled' : ''} onclick="goPage('${type}',${page - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+  const start = Math.max(1, page - 2);
+  const end   = Math.min(totalPages, page + 2);
+  if (start > 1) {
+    btns += `<button class="pg-btn" onclick="goPage('${type}',1)">1</button>`;
+    if (start > 2) btns += `<span class="pg-ellipsis">…</span>`;
+  }
+  for (let i = start; i <= end; i++) {
+    btns += `<button class="pg-btn${i === page ? ' active' : ''}" onclick="goPage('${type}',${i})">${i}</button>`;
+  }
+  if (end < totalPages) {
+    if (end < totalPages - 1) btns += `<span class="pg-ellipsis">…</span>`;
+    btns += `<button class="pg-btn" onclick="goPage('${type}',${totalPages})">${totalPages}</button>`;
+  }
+  btns += `<button class="pg-btn" ${page === totalPages ? 'disabled' : ''} onclick="goPage('${type}',${page + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+  pgEl.innerHTML = `<div class="pagination">${btns}<span class="pg-info">第 ${page} / ${totalPages} 页</span></div>`;
+}
+
+// ── Load all ──
+async function loadAll() {
+  await Promise.all([loadMem(), loadHist(), loadCap(), loadAnn()]);
+  renderStats();
+}
+
+async function loadMem() {
+  try {
+    const r = await fetch(`${API}/api/memories`);
+    const d = await r.json();
+    data.mem = d.memories || [];
+    document.getElementById('cnt-mem').textContent = data.mem.length;
+    renderMem(data.mem);
+  } catch(e) { showError('mem', e); }
+}
+
+async function loadHist() {
+  try {
+    const r = await fetch(`${API}/api/history`);
+    const d = await r.json();
+    data.hist = d.history || [];
+    document.getElementById('cnt-hist').textContent = data.hist.length;
+    renderHist(data.hist);
+  } catch(e) { showError('hist', e); }
+}
+
+async function loadCap() {
+  try {
+    const r = await fetch(`${API}/api/capsules`);
+    const d = await r.json();
+    data.cap = d.capsules || [];
+    document.getElementById('cnt-cap').textContent = data.cap.length;
+    renderCap(data.cap);
+  } catch(e) { showError('cap', e); }
+}
+
+async function loadAnn() {
+  try {
+    const r = await fetch(`${API}/api/anniversaries`);
+    const d = await r.json();
+    data.ann = d.anniversaries || [];
+    document.getElementById('cnt-ann').textContent = data.ann.length;
+    renderAnn(data.ann);
+  } catch(e) { showError('ann', e); }
+}
+
+// ── Render ──
+function renderMem(list) {
+  const el = document.getElementById('list-mem');
+  const page = paginate('mem', list);
+  if (!list.length) { el.innerHTML = empty('fa-solid fa-star','暂无重要记忆'); setPagination('mem', 0); return; }
+  el.innerHTML = page.map(m => `
+    <div class="item mem" id="item-mem-${m.id}">
+      <div class="item-left">
+        <div class="item-main">${esc(m.content)}</div>
+        <div class="item-meta">
+          <span><i class="far fa-clock"></i> ${fmt(m.timestamp)}</span>
+        </div>
+      </div>
+      <button class="btn-del" onclick="delMem('${m.id}')"><i class="fas fa-times"></i> 删除</button>
+    </div>`).join('');
+  setPagination('mem', list.length);
+}
+
+function renderHist(list) {
+  const el = document.getElementById('list-hist');
+  const page = paginate('hist', list);
+  if (!list.length) { el.innerHTML = empty('fas fa-book-open','暂无历史消息'); setPagination('hist', 0); return; }
+  el.innerHTML = page.map(m => {
+    const roleLabel = m.role === 'user' ? '用户' : '小白';
+    const roleIcon  = m.role === 'user' ? 'user' : 'robot';
+    const roleCls   = m.role === 'user' ? 'role-user' : 'role-assistant';
+    return `
+    <div class="item hist" id="item-hist-${m.id}">
+      <div class="item-left">
+        <div class="item-main">${esc(m.content.replace(/^\[(USER|ASSISTANT)\]:\s*/i, ''))}</div>
+        <div class="item-meta">
+          <span class="badge ${roleCls}"><i class="fas fa-${roleIcon}"></i> ${roleLabel}</span>
+          <span><i class="far fa-clock"></i> ${fmt(m.timestamp)}</span>
+        </div>
+      </div>
+      <button class="btn-del" onclick="delHist('${m.id}')"><i class="fas fa-times"></i> 删除</button>
+    </div>`;
+  }).join('');
+  setPagination('hist', list.length);
+}
+
+function renderCap(list) {
+  const el = document.getElementById('list-cap');
+  const page = paginate('cap', list);
+  if (!list.length) { el.innerHTML = empty('fas fa-hourglass-half','暂无时间胶囊'); setPagination('cap', 0); return; }
+  const today = new Date().toISOString().split('T')[0];
+  el.innerHTML = page.map(c => {
+    const opened = c.open_date <= today;
+    const statusText = opened
+      ? '<span class="badge" style="background:rgba(5,150,105,.1);color:#059669"><i class="fas fa-check-circle"></i> 已开封</span>'
+      : `<span><i class="fas fa-lock"></i> 开封：${c.open_date}</span>`;
+    return `
+    <div class="item cap${opened ? ' opened' : ''}" id="item-cap-${c.id}">
+      <div class="item-left">
+        <div class="item-main"><strong>${esc(c.topic)}</strong> · ${esc(c.content || '（无内容）')}</div>
+        <div class="item-meta">
+          ${statusText}
+          <span><i class="far fa-calendar-plus"></i> 创建：${fmt(c.created_at)}</span>
+        </div>
+      </div>
+      <button class="btn-del" onclick="delCap('${c.id}')"><i class="fas fa-times"></i> 删除</button>
+    </div>`;
+  }).join('');
+  setPagination('cap', list.length);
+}
+
+function renderAnn(list) {
+  const el = document.getElementById('list-ann');
+  const page = paginate('ann', list);
+  if (!list.length) { el.innerHTML = empty('fas fa-heart','暂无纪念日'); setPagination('ann', 0); return; }
+  el.innerHTML = page.map(a => {
+    const days = daysUntil(a.date);
+    const countdown = days === 0
+      ? '<i class="fas fa-party-horn"></i> 今天！'
+      : days !== null ? `<i class="fas fa-calendar-day"></i> ${days} 天后`
+      : `<i class="fas fa-calendar"></i> ${a.date}`;
+    return `
+    <div class="item ann" id="item-ann-${a.id}">
+      <div class="item-left">
+        <div class="item-main"><strong>${esc(a.name)}</strong> · ${esc(a.description || '')}</div>
+        <div class="item-meta">
+          <span>${countdown} (${esc(a.date)})</span>
+          <span><i class="far fa-calendar-plus"></i> 创建：${fmt(a.created_at)}</span>
+        </div>
+      </div>
+      <button class="btn-del" onclick="delAnn('${a.id}')"><i class="fas fa-times"></i> 删除</button>
+    </div>`;
+  }).join('');
+  setPagination('ann', list.length);
+}
+
+function empty(icon, text) {
+  return `<div class="empty"><div class="icon"><i class="${icon}"></i></div><div>${text}</div></div>`;
+}
+
+function showError(type, e) {
+  document.getElementById(`list-${type}`).innerHTML =
+    `<div class="empty" style="color:var(--err)"><i class="fas fa-exclamation-triangle icon"></i> 加载失败：${esc(e.message)}</div>`;
+}
+
+// ── Stats ──
+function renderStats() {
+  const chips = [
+    { label:'重要记忆', n: data.mem.length,  color:'rgba(255,215,0,.1)',  border:'rgba(205,127,50,.25)', text:'#E8C013', icon:'fa-solid fa-star' },
+    { label:'历史消息', n: data.hist.length, color:'rgba(8,145,178,.1)',   border:'rgba(8,145,178,.25)',  text:'#0891b2', icon:'book-open' },
+    { label:'时间胶囊', n: data.cap.length,  color:'rgba(245,158,11,.1)', border:'rgba(245,158,11,.25)', text:'#f59e0b', icon:'hourglass-half' },
+    { label:'纪念日',   n: data.ann.length,  color:'rgba(236,72,153,.1)', border:'rgba(236,72,153,.25)', text:'#ec4899', icon:'heart' },
+  ];
+  document.getElementById('stats').innerHTML = chips.map(c => `
+    <div class="stat-chip" style="background:${c.color};border-color:${c.border};color:${c.text}">
+      <i class="fas fa-${c.icon}"></i>
+      <span class="n">${c.n}</span><span>${c.label}</span>
+    </div>`).join('');
+}
+
+// ── Delete single ──
+async function delMem(id) {
+  if (!confirm('确定删除这条记忆？')) return;
+  await fetch(`${API}/api/memories/${id}`, { method: 'DELETE' });
+  data.mem = data.mem.filter(x => x.id !== id);
+  _lists.mem = _lists.mem.filter(x => x.id !== id);
+  document.getElementById('cnt-mem').textContent = data.mem.length;
+  renderMem(_lists.mem);
+  renderStats();
+}
+
+async function delHist(id) {
+  if (!confirm('确定删除这条历史消息？\n\n将同时清除 AI 对话上下文缓存，并清除主界面全部聊天气泡。')) return;
+  await fetch(`${API}/api/history/${id}`, { method: 'DELETE' });
+  data.hist = data.hist.filter(x => x.id !== id);
+  _lists.hist = _lists.hist.filter(x => x.id !== id);
+  document.getElementById('cnt-hist').textContent = data.hist.length;
+  renderHist(_lists.hist);
+  renderStats();
+  await clearAllSessions();
+  clearMainPageChat();
+}
+
+async function delCap(id) {
+  if (!confirm('确定删除这个时间胶囊？')) return;
+  await fetch(`${API}/api/capsules/${id}`, { method: 'DELETE' });
+  data.cap = data.cap.filter(x => x.id !== id);
+  _lists.cap = _lists.cap.filter(x => x.id !== id);
+  document.getElementById('cnt-cap').textContent = data.cap.length;
+  renderCap(_lists.cap);
+  renderStats();
+}
+
+async function delAnn(id) {
+  if (!confirm('确定删除这个纪念日？')) return;
+  await fetch(`${API}/api/anniversaries/${id}`, { method: 'DELETE' });
+  data.ann = data.ann.filter(x => x.id !== id);
+  _lists.ann = _lists.ann.filter(x => x.id !== id);
+  document.getElementById('cnt-ann').textContent = data.ann.length;
+  renderAnn(_lists.ann);
+  renderStats();
+}
+
+// ── Delete all ──
+async function deleteAll(type) {
+  const labels = { mem:'所有重要记忆', hist:'所有历史消息', cap:'所有时间胶囊', ann:'所有纪念日' };
+
+  const extraWarn = type === 'hist'
+    ? '\n\n⚠️ 同时会清除主界面全部聊天气泡，以及 AI 对话上下文缓存。'
+    : '';
+  if (!confirm(`确定清空${labels[type]}？此操作不可撤销。${extraWarn}`)) return;
+
+  if (type === 'hist') {
+    // 单次请求批量清除 ChromaDB + 内存会话，彻底无残留
+    await fetch(`${API}/api/history`, { method: 'DELETE' });
+    clearMainPageChat();
+  } else {
+    const list = [...data[type]];
+    const fns = { mem: id => fetch(`${API}/api/memories/${id}`,{method:'DELETE'}),
+                  cap:  id => fetch(`${API}/api/capsules/${id}`,{method:'DELETE'}),
+                  ann:  id => fetch(`${API}/api/anniversaries/${id}`,{method:'DELETE'}) };
+    await Promise.all(list.map(x => fns[type](x.id)));
+  }
+
+  await loadAll();
+}
+
+// ── Filter ──
+function filter(type, query) {
+  _pages[type] = 1;
+  const q = query.trim().toLowerCase();
+  const renders = { mem: renderMem, hist: renderHist, cap: renderCap, ann: renderAnn };
+  if (!q) { renders[type](data[type]); return; }
+  const fields = {
+    mem:  m => m.content,
+    hist: m => m.content + m.role,
+    cap:  m => m.topic + (m.content || ''),
+    ann:  m => m.name + (m.description || '') + m.date,
+  };
+  renders[type](data[type].filter(x => fields[type](x).toLowerCase().includes(q)));
+}
+
+// ── Tabs ──
+function switchTab(type) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${type}`).classList.add('active');
+  document.getElementById(`panel-${type}`).classList.add('active');
+}
+
+function triggerRefresh(btn) {
+  btn.classList.remove('spinning');
+  void btn.offsetWidth;
+  btn.classList.add('spinning');
+  btn.addEventListener('animationend', () => btn.classList.remove('spinning'), { once: true });
+  loadAll();
+}
+
+// ── Init ──
+loadAll();
+</script>
+</body>
+</html>

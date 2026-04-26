@@ -1,0 +1,2668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>小白</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --bg0: #f0f2f5;
+  --bg1: #ffffff;
+  --bg2: #f5f6f8;
+  --bg3: #eaedf1;
+  --accent: #3b82f6;
+  --accent2: #2563eb;
+  --accent-dim: rgba(59,130,246,.1);
+  --txt0: #111827;
+  --txt1: #4b5563;
+  --txt2: #9ca3af;
+  --border: rgba(0,0,0,.08);
+  --mem: #E8C013;
+  --mem-dim: rgba(232,192,19,.08);
+  --hist: #0891b2;
+  --hist-dim: rgba(8,145,178,.07);
+  --ok: #059669;
+  --ok-dim: rgba(5,150,105,.07);
+  --err: #dc2626;
+  --user-bg: #dbeafe;
+  --ai-bg: #ffffff;
+  --radius: 14px;
+  --cap: #f59e0b;
+  --cap-dim: rgba(245,158,11,.08);
+  --ann: #ec4899;
+  --ann-dim: rgba(236,72,153,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg0);color:var(--txt0);display:flex}
+
+/* ── Sidebar ── */
+#sidebar{
+  width:300px;min-width:300px;
+  background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transition:width .25s ease,min-width .25s ease;
+  overflow:hidden;
+}
+#sidebar.hide{width:0;min-width:0}
+
+/* Sidebar header */
+.sb-head{
+  padding:16px 14px 13px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:9px;flex-shrink:0;
+}
+.sb-icon{
+  width:30px;height:30px;border-radius:8px;
+  background:var(--mem);display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;
+}
+
+.sb-set-icon,
+.sb-set-icon i {
+  background: transparent !important;
+}
+
+.sb-head-info{flex:1;min-width:0}
+.sb-head h2{font-size:13px;font-weight:600;white-space:nowrap}
+.sb-hist-count{font-size:10px;color:var(--txt2);margin-top:1px}
+
+/* Scrollable sections area */
+.sb-sections{
+  flex:1;overflow-y:auto;display:flex;flex-direction:column;
+}
+.sb-sections::-webkit-scrollbar{width:3px}
+.sb-sections::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Sections */
+.sb-section{border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-section-head{
+  display:flex;align-items:center;gap:7px;
+  padding:10px 14px;cursor:pointer;user-select:none;
+  font-size:12px;font-weight:600;color:var(--txt1);
+  transition:background .15s;
+}
+.sb-section-head:hover{background:var(--bg2)}
+.sb-section-head .sb-sect-badge{
+  margin-left:auto;border-radius:20px;padding:1px 7px;
+  font-size:10px;font-weight:700;color:#fff;flex-shrink:0;
+}
+.sb-section-head .chevron{font-size:9px;color:var(--txt2);transition:transform .2s;flex-shrink:0}
+.sb-section-head.open .chevron{transform:rotate(180deg)}
+.sb-section-body{
+  display:flex;flex-direction:column;gap:5px;
+  padding:6px 14px 10px;max-height:200px;overflow-y:auto;
+}
+.sb-section-body.collapsed{display:none}
+.sb-section-body::-webkit-scrollbar{width:3px}
+.sb-section-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.sb-section-icon {
+  width: 16px; 
+  height: 16px;
+  display: inline-flex; 
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; 
+}
+/* Memory items — same card style as cap / ann */
+.mem-item{
+  background:var(--mem-dim);border:1px solid rgba(124,58,237,.18);
+  border-left:3px solid var(--mem);border-radius:8px;
+  padding:7px 10px;font-size:12px;line-height:1.45;
+  animation:fadeIn .3s ease;
+}
+.mem-item.fresh{border-left-color:var(--ok);background:var(--ok-dim)}
+.mem-content{color:var(--txt0);word-break:break-word}
+.mem-time{font-size:10px;color:var(--txt2);margin-top:3px}
+
+/* Capsule items */
+.cap-item{
+  background:var(--cap-dim);border:1px solid rgba(245,158,11,.2);
+  border-left:3px solid var(--cap);border-radius:8px;
+  padding:7px 10px;font-size:12px;line-height:1.4;
+  display:flex;justify-content:space-between;align-items:center;gap:6px;
+}
+.cap-topic{color:var(--txt0);font-weight:500;flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cap-countdown{font-size:10px;white-space:nowrap;flex-shrink:0;color:var(--cap);font-weight:600}
+.cap-countdown.opened{color:var(--ok)}
+
+/* Anniversary items */
+.ann-item{
+  background:var(--ann-dim);border:1px solid rgba(236,72,153,.2);
+  border-left:3px solid var(--ann);border-radius:8px;
+  padding:7px 10px;font-size:12px;line-height:1.4;
+  display:flex;justify-content:space-between;align-items:center;gap:6px;
+}
+.ann-name{color:var(--txt0);font-weight:500;flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ann-date{font-size:10px;color:var(--ann);font-weight:600;white-space:nowrap;flex-shrink:0}
+
+.sb-sect-empty{font-size:11px;color:var(--txt2);text-align:center;padding:10px 0}
+
+/* Settings entry pinned to bottom of sidebar */
+.sb-foot{
+  flex-shrink:0;
+  border-top:1px solid var(--border);
+  padding:10px 14px;
+  background: var(--bg1); /* 背景覆盖，避免透传内容 */
+  z-index: 10;      /* 确保层级高于滚动内容 */
+}
+.sb-set-btn{
+  width:100%;display:flex;align-items:center;gap:9px;
+  padding:9px 12px;border-radius:9px;border:none;background:none;
+  font-size:12px;font-weight:500;color:var(--txt1);
+  cursor:pointer;transition:background .15s;text-align:left;
+}
+.sb-set-btn:hover{background:var(--bg2);color:var(--txt0)}
+.sb-set-icon{
+  width:28px;height:28px;border-radius:8px;
+  background:var(--bg3);display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;transition:transform .3s;
+}
+.sb-set-btn:hover .sb-set-icon{transform:rotate(60deg)}
+.sb-set-info{flex:1;min-width:0}
+.sb-set-name{
+  font-size:12px;font-weight:600;color:var(--txt0);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sb-set-sub{font-size:10px;color:var(--txt2);margin-top:1px}
+.sb-set-sub i {
+font-size: 15px; 
+color: #333; 
+}
+.sb-set-sub span {
+font-size: 16px; 
+color: #333; 
+font-weight: normal; 
+}
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh}
+
+/* topbar */
+.topbar{
+  padding:12px 18px;background:var(--bg1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.topbar-title{font-size:14px;font-weight:600;flex:1}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex-shrink:0}
+.icon-btn{
+  background:none;border:none;color:var(--txt1);cursor:pointer;
+  padding:6px;border-radius:7px;font-size:17px;transition:all .2s;line-height:1;
+}
+.icon-btn:hover{background:var(--bg3);color:var(--txt0)}
+/* ── Model picker trigger button ── */
+.model-btn{
+  display:flex;align-items:center;gap:6px;
+  background:var(--bg3);border:1px solid var(--border);color:var(--txt0);
+  padding:5px 10px 5px 8px;border-radius:8px;font-size:12px;
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.model-btn:hover{background:var(--bg2);border-color:var(--accent)}
+.model-btn.open{border-color:var(--accent);background:var(--bg1)}
+.model-btn-provider{
+  font-size:10px;color:var(--txt2);background:var(--bg2);
+  padding:1px 5px;border-radius:4px;flex-shrink:0;
+}
+.model-btn-name{font-weight:500;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.model-btn-arrow{font-size:9px;color:var(--txt2);transition:transform .2s;flex-shrink:0}
+.model-btn.open .model-btn-arrow{transform:rotate(180deg)}
+
+/* ── Model picker modal ── */
+.model-modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.48);backdrop-filter:blur(4px);
+  z-index:500;display:flex;align-items:center;justify-content:center;
+  animation:fadeIn .18s ease;
+}
+@keyframes modalIn{
+  from{opacity:0;transform:scale(.95) translateY(12px)}
+  to  {opacity:1;transform:scale(1)   translateY(0)}
+}
+.model-modal{
+  background:var(--bg1);border-radius:18px;
+  width:min(720px,calc(100vw - 28px));
+  height:min(540px,calc(100vh - 80px));
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 28px 72px rgba(0,0,0,.24);
+  animation:modalIn .22s cubic-bezier(.34,1.4,.64,1);
+}
+.model-modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:15px 20px 13px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.model-modal-title{font-size:14px;font-weight:700;color:var(--txt0);display:flex;align-items:center;gap:7px}
+.model-modal-close{
+  width:28px;height:28px;border-radius:8px;background:none;border:none;
+  cursor:pointer;font-size:15px;color:var(--txt2);
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.model-modal-close:hover{background:var(--bg3);color:var(--txt0)}
+.model-modal-body{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* Left — provider list */
+.mmodal-sidebar{
+  width:138px;min-width:138px;border-right:1px solid var(--border);
+  overflow-y:auto;padding:8px 0;flex-shrink:0;
+}
+.mmodal-sidebar::-webkit-scrollbar{width:3px}
+.mmodal-sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.mmodal-section-label{
+  font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--txt2);padding:8px 14px 4px;opacity:.7;
+}
+.mmodal-prov-btn{
+  display:flex;align-items:center;gap:0;
+  width:100%;padding:8px 14px;border:none;background:none;
+  font-size:12px;font-weight:500;color:var(--txt1);
+  cursor:pointer;text-align:left;transition:all .12s;white-space:nowrap;
+}
+.mmodal-prov-btn:hover{background:var(--bg2);color:var(--txt0)}
+.mmodal-prov-btn.active{background:var(--accent-dim);color:var(--accent);font-weight:700}
+.mmodal-prov-name{flex:1;overflow:hidden;text-overflow:ellipsis}
+.mmodal-prov-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--ok);
+  flex-shrink:0;margin-left:5px;
+}
+
+/* Right — model list */
+.mmodal-content{flex:1;overflow-y:auto;padding:10px 12px;min-width:0}
+.mmodal-content::-webkit-scrollbar{width:4px}
+.mmodal-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.mpanel-group-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--txt2);padding:8px 8px 4px;
+}
+.mpanel-model-btn{
+  display:flex;align-items:center;gap:9px;width:100%;
+  padding:8px 10px;border-radius:8px;border:none;
+  background:none;color:var(--txt0);font-size:13px;
+  cursor:pointer;text-align:left;transition:background .12s;
+}
+.mpanel-model-btn:hover{background:var(--bg2)}
+.mpanel-model-btn.selected{background:var(--accent-dim);color:var(--accent);font-weight:600}
+.mpanel-model-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--border);flex-shrink:0;
+}
+.mpanel-model-btn.selected .mpanel-model-dot{background:var(--accent)}
+
+/* API 密钥卡片 */
+.mmodal-key-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;padding:11px 12px 10px;margin-bottom:10px;
+}
+.mmodal-key-head{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:8px;
+}
+.mmodal-key-badge{
+  margin-left:auto;font-size:10px;font-weight:600;
+  padding:2px 7px;border-radius:10px;
+  background:var(--bg3);color:var(--txt2);
+}
+.mmodal-key-badge.ok{background:rgba(5,150,105,.13);color:var(--ok)}
+.mmodal-key-row{display:flex;gap:7px}
+.mmodal-key-input{
+  flex:1;padding:7px 10px;border:1px solid var(--border);
+  border-radius:7px;font-size:12px;background:var(--bg1);
+  color:var(--txt0);outline:none;transition:border-color .15s;
+  font-family:'Cascadia Code','JetBrains Mono',monospace;
+}
+.mmodal-key-input:focus{border-color:var(--accent)}
+.mmodal-key-save{
+  padding:7px 13px;border-radius:7px;border:none;
+  background:var(--accent);color:#fff;font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;
+}
+.mmodal-key-save:hover{background:var(--accent2)}
+.mmodal-key-save:disabled{opacity:.55;cursor:not-allowed}
+.mmodal-key-hint{font-size:10px;color:var(--txt2);margin-top:5px;line-height:1.5}
+/* 弹窗底部确认栏 */
+.model-modal-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 18px;border-top:1px solid var(--border);flex-shrink:0;
+  background:var(--bg2);border-radius:0 0 18px 18px;gap:12px;
+}
+.modal-sel-info{display:flex;align-items:center;gap:7px;min-width:0;flex:1;overflow:hidden}
+.modal-sel-label{font-size:11px;color:var(--txt2);white-space:nowrap;flex-shrink:0}
+.modal-sel-provider{
+  font-size:10px;font-weight:600;color:var(--txt2);
+  background:var(--bg3);padding:2px 6px;border-radius:4px;flex-shrink:0;
+}
+.modal-sel-name{
+  font-size:13px;font-weight:600;color:var(--txt0);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.model-modal-confirm{
+  padding:8px 26px;background:var(--accent);color:#fff;
+  border:none;border-radius:9px;font-size:13px;font-weight:700;
+  cursor:pointer;transition:background .15s;flex-shrink:0;
+}
+.model-modal-confirm:hover{background:var(--accent2)}
+/* 模型列表与密钥卡片之间的分隔 */
+.mmodal-models-sep{
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--txt2);padding:2px 8px 4px;opacity:.7;
+}
+/* 自定义供应商表单 */
+.mpanel-custom{padding:14px 12px;display:flex;flex-direction:column;gap:11px}
+.mpanel-custom-row{display:flex;flex-direction:column;gap:5px}
+.mpanel-custom-row label{font-size:11px;color:var(--txt2);font-weight:600;letter-spacing:.2px}
+.mpanel-custom-row input,.mpanel-custom-row select{
+  width:100%;padding:8px 10px;border:1px solid var(--border);
+  border-radius:8px;font-size:13px;background:var(--bg2);
+  color:var(--txt0);outline:none;transition:border-color .15s;font-family:inherit;
+}
+.mpanel-custom-row input:focus,.mpanel-custom-row select:focus{border-color:var(--accent)}
+.mpanel-custom-apply{
+  padding:9px;border-radius:9px;border:none;
+  background:var(--accent);color:#fff;font-size:13px;font-weight:600;
+  cursor:pointer;transition:background .15s;margin-top:2px;
+}
+.mpanel-custom-apply:hover{background:var(--accent2)}
+
+/* messages */
+.msgs{flex:1;overflow-y:auto;padding:22px 18px;display:flex;flex-direction:column;gap:18px}
+.msgs::-webkit-scrollbar{width:5px}
+.msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* welcome */
+.welcome{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:100%;gap:14px;color:var(--txt2);
+}
+.welcome .wicon{font-size:52px;margin-bottom:4px}
+.welcome h3{font-size:17px;font-weight:600;color:var(--txt1)}
+.welcome p{font-size:13px;text-align:center;max-width:360px;line-height:1.7}
+.feat-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px}
+.feat{padding:5px 12px;border-radius:20px;font-size:11px;border:1px solid var(--border);color:var(--txt1)}
+
+/* message group */
+.msg-group{display:flex;flex-direction:column;gap:3px;animation:slideUp .3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.msg-row{display:flex;gap:9px;align-items:flex-start}
+.msg-row.user{
+flex-direction:row-reverse;
+align-items: flex-start;
+}
+
+.av{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+}
+.av-u{background:var(--accent);color: white;font-weight: 600;}
+.av-a{background:var(--bg3)}
+.av-spacer{width:30px;min-width:30px;flex-shrink:0}
+.msg-row.para-extra{margin-top:4px}
+
+.bubble{max-width:72%;padding:11px 15px;border-radius:var(--radius);font-size:14px;line-height:1.65;word-break:break-word}
+.bubble-u{background:var(--user-bg);border-top-right-radius:4px;}
+.bubble-a{background:var(--ai-bg);border:1px solid var(--border);border-top-left-radius:4px}
+.bubble-a p{margin-bottom:.6em}
+.bubble-a p:last-child{margin-bottom:0}
+.bubble-a code{background:rgba(0,0,0,.06);padding:2px 5px;border-radius:4px;font-size:12px;font-family:'Cascadia Code','JetBrains Mono',monospace}
+.bubble-a pre{background:#f3f4f6;border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto;margin:.6em 0}
+.bubble-a pre code{background:none;padding:0;border-radius:0}
+.bubble-a ul,.bubble-a ol{margin-left:18px;margin-bottom:.6em}
+.bubble-a h1,.bubble-a h2,.bubble-a h3{margin-bottom:.5em;font-size:1em;color:var(--txt0)}
+.bubble-a strong{color:var(--txt0)}
+.bubble-a blockquote{border-left:3px solid var(--accent);padding-left:10px;color:var(--txt1);margin:.5em 0}
+.bubble-a table{border-collapse:collapse;width:100%;margin:.6em 0;font-size:12px}
+.bubble-a th,.bubble-a td{border:1px solid var(--border);padding:6px 10px;text-align:left}
+.bubble-a th{background:var(--bg3)}
+.bubble-a hr{border:none;border-top:1px solid var(--border);margin:.8em 0}
+
+/* RAG strip */
+.rag-strip{margin-left:39px;margin-top:2px}
+.rag-toggle{
+  background:none;border:none;font-size:11px;color:var(--txt2);
+  cursor:pointer;padding:2px 7px;border-radius:4px;transition:all .2s;
+  display:inline-flex;align-items:center;gap:3px;
+}
+.rag-toggle:hover{background:var(--bg2);color:var(--txt1)}
+.rag-box{background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-top:5px;font-size:12px;display:none}
+.rag-box.open{display:block;animation:fadeIn .2s ease}
+.rag-sec{margin-bottom:8px}
+.rag-sec:last-child{margin-bottom:0}
+.rag-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2);margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;margin:2px 2px 2px 0;line-height:1.5}
+.tag-m{background:var(--mem-dim);color:var(--mem);border:1px solid rgba(139,92,246,.25)}
+.tag-h{background:var(--hist-dim);color:var(--hist);border:1px solid rgba(6,182,212,.25)}
+.tag-n{background:var(--ok-dim);color:var(--ok);border:1px solid rgba(16,185,129,.25)}
+
+/* typing */
+.typing{display:flex;gap:5px;padding:12px 15px;background:var(--ai-bg);border:1px solid var(--border);border-radius:var(--radius);border-bottom-left-radius:4px;width:fit-content}
+.dot-t{width:6px;height:6px;border-radius:50%;background:var(--txt2);animation:bounce 1.4s infinite}
+.dot-t:nth-child(2){animation-delay:.2s}
+.dot-t:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+/* input area */
+.input-area{padding:14px 18px;background:var(--bg1);border-top:1px solid var(--border);flex-shrink:0}
+.input-wrap{
+  display:flex;gap:9px;align-items:flex-end;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:13px;padding:9px 13px;transition:border-color .2s;
+}
+.input-wrap:focus-within{border-color:var(--accent)}
+#msg-input{flex:1;background:none;border:none;color:var(--txt0);font-size:14px;resize:none;max-height:130px;min-height:22px;line-height:1.55;font-family:inherit}
+#msg-input:focus{outline:none}
+#msg-input::placeholder{color:var(--txt2)}
+.send-btn{width:35px;height:35px;border:none;border-radius:9px;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.send-btn:hover{background:var(--accent2);transform:scale(1.05)}
+.send-btn:disabled{background:var(--bg2);cursor:not-allowed;transform:none}
+.input-footer{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.hint{font-size:11px;color:var(--txt2)}
+#rag-status{font-size:11px;color:var(--txt2)}
+
+/* ctx-info bar */
+.ctx-bar{
+  padding:5px 18px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--txt2);flex-shrink:0;
+}
+.ctx-item{display:flex;align-items:center;gap:4px}
+.ctx-human{display:flex;align-items:center;gap:14px}
+.ctx-dot{width:5px;height:5px;border-radius:50%;background:var(--ok);flex-shrink:0}
+.ctx-dot.loading{background:var(--txt2);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* ── Settings Modal (slides up from bottom-left) ── */
+/* 修改设置面板定位 & 动画 */
+/* ── Settings Modal (slides up from bottom-left) ── */
+/* 修改设置面板定位 & 动画 */
+.set-overlay {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  display: flex;
+  align-items: flex-start; /* 改为顶部对齐 */
+  justify-content: flex-start;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+.set-overlay.open{
+  opacity: 1;
+  pointer-events: all;
+}
+.set-panel{
+  border-radius: 18px 18px 0 0;
+  padding: 28px 14px 36px; 
+  width: 100%; /* 改为自适应侧边栏宽度 */
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05); /* 增加阴影增强分层 */
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  margin: 0;
+  border: none;
+  visibility: visible; /* 避免初始隐藏导致的高度计算错误 */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box; /* 确保padding不影响宽度计算 */
+  background: #ffffff !important; /* 强制纯白背景 */
+  z-index: 100; /* 提高层级防止重叠 */
+}
+
+.set-overlay.open .set-panel{
+  transform: translateY(0); /* 向上滑出到目标位置 */
+}
+.set-panel::-webkit-scrollbar{width:3px}
+.set-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+.set-close{
+  background:none;border:none;color:var(--txt2);
+  font-size:18px;cursor:pointer;padding:3px 5px;
+  border-radius:6px;line-height:1;transition:all .15s;
+}
+.set-close:hover{background:var(--bg2);color:var(--txt0)}
+.set-row{margin-bottom:18px}
+.set-label{
+  font-size:10px;font-weight:700;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--txt2);margin-bottom:8px;
+}
+.set-av-row{display:flex;align-items:center;gap:11px}
+
+/* Avatar upload area */
+.set-av-wrap{position:relative;flex-shrink:0}
+label.set-av-preview{cursor:pointer;overflow:hidden;position:relative}
+.set-av-preview{
+  width:54px;height:54px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;border:2px solid var(--border);
+  background-size:cover;background-position:center;
+}
+/* default images shown before user uploads a custom one */
+.set-av-preview.user-prev{
+  background-image:url('images/avatar/user_default.png');
+  background-size:cover;background-position:center;
+}
+.set-av-preview.ai-prev{
+  background-image:url('images/avatar/xiaobai_default.png');
+  background-size:cover;background-position:center;
+}
+/* camera icon overlay on hover */
+.set-av-cam{
+  position:absolute;inset:0;border-radius:50%;
+  background:rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;opacity:0;transition:opacity .18s;pointer-events:none;
+}
+label.set-av-preview:hover .set-av-cam{opacity:1}
+
+/* avatar upload description text */
+.set-av-desc{font-size:12px;color:var(--txt1);line-height:1.6}
+.set-av-desc small{font-size:10px;color:var(--txt2)}
+.set-name-input{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  color:var(--txt0);padding:9px 12px;
+  border-radius:9px;font-size:14px;font-family:inherit;
+}
+.set-name-input:focus{outline:none;border-color:var(--accent)}
+.set-divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.set-save{
+  width:100%;padding:11px;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:10px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  transition:background .2s;margin-top:4px;
+}
+.set-save:hover{background:var(--accent2)}
+
+/* ── 人格控制 Modal ── */
+.pers-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.48);backdrop-filter:blur(4px);
+  z-index:600;display:flex;align-items:center;justify-content:center;
+  animation:fadeIn .18s ease;
+}
+.pers-modal{
+  background:var(--bg1);border-radius:18px;
+  width:min(860px,calc(100vw - 28px));
+  height:min(640px,calc(100vh - 60px));
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 28px 72px rgba(0,0,0,.24);
+  animation:modalIn .22s cubic-bezier(.34,1.4,.64,1);
+}
+.pers-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:15px 20px 13px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.pers-title{font-size:14px;font-weight:700;color:var(--txt0);display:flex;align-items:center;gap:7px}
+.pers-close{
+  width:28px;height:28px;border-radius:8px;background:none;border:none;
+  cursor:pointer;font-size:15px;color:var(--txt2);
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.pers-close:hover{background:var(--bg3);color:var(--txt0)}
+.pers-body{display:flex;flex:1;overflow:hidden;min-height:0}
+.pers-tabs{
+  width:96px;min-width:96px;border-right:1px solid var(--border);
+  overflow-y:auto;padding:6px 0;flex-shrink:0;
+}
+.pers-tabs::-webkit-scrollbar{width:3px}
+.pers-tabs::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.pers-tab{
+  display:flex;align-items:center;gap:6px;
+  width:100%;padding:9px 10px;border:none;background:none;
+  font-size:11.5px;font-weight:500;color:var(--txt1);
+  cursor:pointer;text-align:left;transition:all .12s;white-space:nowrap;
+}
+.pers-tab:hover{background:var(--bg2);color:var(--txt0)}
+.pers-tab.active{background:rgba(99,102,241,.1);color:#6366f1;font-weight:700}
+.pers-tab-icon{font-size:13px;flex-shrink:0}
+.pers-content{flex:1;overflow-y:auto;padding:16px 20px;min-width:0}
+.pers-content::-webkit-scrollbar{width:4px}
+.pers-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.pers-panel{display:none}
+.pers-panel.active{display:block}
+.pers-section-title{font-size:13px;font-weight:700;color:var(--txt0);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.pers-section-desc{font-size:11px;color:var(--txt2);margin-bottom:14px;line-height:1.55}
+.pers-field{margin-bottom:14px}
+.pers-label{
+  display:block;font-size:10px;font-weight:700;color:var(--txt2);
+  margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;
+}
+.pers-input,.pers-textarea{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  color:var(--txt0);padding:9px 12px;
+  border-radius:9px;font-size:13px;font-family:inherit;transition:border-color .15s;
+}
+.pers-input:focus,.pers-textarea:focus{outline:none;border-color:#6366f1}
+.pers-textarea{resize:vertical;min-height:56px;line-height:1.5}
+.pers-number{
+  width:80px;background:var(--bg2);border:1px solid var(--border);
+  color:var(--txt0);padding:8px 12px;
+  border-radius:9px;font-size:13px;text-align:center;
+}
+.pers-number:focus{outline:none;border-color:#6366f1}
+.pers-toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg2);border:1px solid var(--border);
+  padding:10px 14px;border-radius:10px;margin-bottom:9px;
+}
+.pers-toggle-label{font-size:12.5px;color:var(--txt0)}
+.pers-toggle{position:relative;width:38px;height:22px;flex-shrink:0;display:inline-block}
+.pers-toggle input{opacity:0;width:0;height:0}
+.pers-toggle-slider{
+  position:absolute;cursor:pointer;inset:0;
+  background:var(--bg3);border-radius:22px;transition:.2s;
+}
+.pers-toggle-slider:before{
+  position:absolute;content:"";
+  height:16px;width:16px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:.2s;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.pers-toggle input:checked + .pers-toggle-slider{background:#6366f1}
+.pers-toggle input:checked + .pers-toggle-slider:before{transform:translateX(16px)}
+.pers-list{display:flex;flex-direction:column;gap:5px;margin-bottom:7px}
+.pers-list-item{
+  display:flex;align-items:flex-start;gap:7px;
+  background:var(--bg2);border:1px solid var(--border);
+  padding:8px 10px;border-radius:8px;
+}
+.pers-list-text{
+  flex:1;font-size:12px;line-height:1.5;color:var(--txt0);
+  word-break:break-word;white-space:pre-wrap;
+}
+.pers-list-del{
+  background:none;border:none;cursor:pointer;
+  color:var(--txt2);font-size:13px;padding:1px 4px;
+  border-radius:5px;transition:all .15s;flex-shrink:0;margin-top:1px;
+}
+.pers-list-del:hover{background:rgba(220,38,38,.1);color:var(--err)}
+.pers-add-row{display:flex;gap:6px;align-items:flex-end}
+.pers-add-input{
+  flex:1;background:var(--bg2);border:1px dashed var(--border);
+  color:var(--txt0);padding:8px 12px;
+  border-radius:9px;font-size:12px;font-family:inherit;
+  transition:border-color .15s;resize:none;min-height:36px;
+}
+.pers-add-input:focus{outline:none;border-color:#6366f1;border-style:solid}
+.pers-add-btn{
+  background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);
+  color:#6366f1;padding:8px 13px;border-radius:9px;
+  font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:all .15s;flex-shrink:0;
+}
+.pers-add-btn:hover{background:rgba(99,102,241,.22)}
+.pers-preview-box{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;padding:14px 16px;
+  font-size:11px;line-height:1.65;color:var(--txt1);
+  white-space:pre-wrap;word-break:break-word;
+  max-height:360px;overflow-y:auto;
+  font-family:'Menlo','Consolas',monospace;
+}
+.pers-preview-refresh{
+  background:var(--bg3);border:1px solid var(--border);
+  color:var(--txt1);padding:7px 14px;
+  border-radius:8px;font-size:12px;cursor:pointer;
+  transition:all .15s;margin-bottom:10px;
+}
+.pers-preview-refresh:hover{background:var(--bg2)}
+.pers-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0;gap:10px;
+}
+.pers-reset{
+  background:none;border:1px solid var(--border);
+  color:var(--txt1);padding:9px 16px;border-radius:9px;
+  font-size:12px;cursor:pointer;transition:all .15s;
+}
+.pers-reset:hover{border-color:var(--err);color:var(--err)}
+.pers-save{
+  background:#6366f1;border:none;color:#fff;
+  padding:9px 22px;border-radius:9px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:background .2s;
+}
+.pers-save:hover{background:#4f46e5}
+.pers-status{font-size:11px;color:var(--txt2);flex:1;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside id="sidebar">
+
+  <div class="sb-head">
+    <i class="fa-solid fa-share-nodes"></i>
+    <div class="sb-head-info">
+      <h2>记忆系统</h2>
+      <div class="sb-hist-count">历史消息 <span id="s-hist">0</span> 条</div>
+    </div>
+  </div>
+
+  <!-- Three panels stacked at the top, scrollable together -->
+  <div class="sb-sections">
+
+    <!-- 重要记忆 -->
+    <div class="sb-section">
+      <div class="sb-section-head" id="mem-head" onclick="toggleSection('mem')">
+        <i class="fa-solid fa-star sb-section-icon" style="color: #E8C013;"></i>
+        <span>重要记忆</span>
+        <span class="sb-sect-badge" id="mem-badge" style="background:#E8C013;">0</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="sb-section-body collapsed" id="mem-body">
+        <div class="sb-sect-empty">暂无记忆</div>
+      </div>
+    </div>
+
+    <!-- 时间胶囊 -->
+    <div class="sb-section">
+      <div class="sb-section-head" id="cap-head" onclick="toggleSection('cap')">
+        <i class="fa-solid fa-hourglass-half sb-section-icon" style="color: rgb(245, 158, 11);"></i>
+        <span>时间胶囊</span>
+        <span class="sb-sect-badge" id="cap-badge" style="background:var(--cap)">0</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="sb-section-body collapsed" id="cap-body">
+        <div class="sb-sect-empty">暂无胶囊</div>
+      </div>
+    </div>
+
+    <!-- 纪念日 -->
+    <div class="sb-section">
+      <div class="sb-section-head" id="ann-head" onclick="toggleSection('ann')">
+        <i class="fa-solid fa-heart sb-section-icon" style="color: rgb(236, 72, 153);"></i>
+        <span>纪念日</span>
+        <span class="sb-sect-badge" id="ann-badge" style="background:var(--ann)">0</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="sb-section-body collapsed" id="ann-body">
+        <div class="sb-sect-empty">暂无纪念日</div>
+      </div>
+    </div>
+
+  </div><!-- /sb-sections -->
+
+  <!-- Settings entry pinned to bottom-left of sidebar -->
+  <div class="sb-foot">
+    <button class="sb-set-btn" onclick="window.open('/manage','_blank')">
+      <div class="sb-set-info">
+        <div class="sb-set-sub">
+          <img src="/images/memory_favicon.png" alt="图标" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;">
+          <span style="display: inline;">记忆管理</span>
+        </div>
+      </div>
+    </button>
+    <button class="sb-set-btn" onclick="openPersonality()">
+      <div class="sb-set-info">
+        <div class="sb-set-sub">
+          <i class="fa-solid fa-sliders" style="margin-right: 6px; color:#6366f1;"></i>
+          <span style="display: inline;">人格控制</span>
+        </div>
+      </div>
+    </button>
+    <button class="sb-set-btn" onclick="openSettings()">
+      <div class="sb-set-info">
+        <div class="sb-set-sub">
+          <i class="fa-solid fa-gear" style="margin-right: 6px;"></i>
+          <span style="display: inline;">设置</span>
+        </div>
+      </div>
+    </button>
+  </div>
+
+</aside>
+
+<!-- ── Main Chat ── -->
+<main class="main">
+  <div class="topbar">
+    <button class="icon-btn" onclick="toggleSidebar()" title="切换记忆面板">☰</button>
+    <div class="topbar-title">小白</div>
+    <div class="dot"></div>
+    <button class="model-btn" id="model-btn" onclick="toggleModelPicker()" title="选择 AI 供应商和模型">
+      <span class="model-btn-provider" id="model-btn-provider">GPT4Novel</span>
+      <span class="model-btn-name" id="model-btn-name">XL 16K ★</span>
+      <span class="model-btn-arrow">▾</span>
+    </button>
+  </div>
+
+  <div class="ctx-bar">
+    <div class="ctx-item"><span>🕐</span><span id="ctx-time">获取中…</span></div>
+    <div class="ctx-human">
+      <div class="ctx-item" id="ctx-weather-item" style="display:none">
+        <span id="ctx-weather-icon">🌡️</span>
+        <span id="ctx-weather-text"></span>
+      </div>
+      <div class="ctx-item">
+        <div class="ctx-dot loading" id="ctx-dot"></div>
+        <span id="ctx-loc">定位中…</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="msgs" id="msgs">
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <textarea id="msg-input" rows="1" placeholder="输入消息…"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="input-footer">
+      <span class="hint">Enter 发送 · Shift+Enter 换行</span>
+      <span id="rag-status">就绪</span>
+    </div>
+  </div>
+</main>
+
+<!-- ── Settings Modal — slides up from bottom-left ── -->
+<div class="set-overlay" id="set-overlay" onclick="overlayClose(event)">
+  <div class="set-panel" id="set-panel">
+    <!-- User avatar -->
+    <div class="set-row">
+      <div class="set-label">我的头像</div>
+      <div class="set-av-row">
+        <div class="set-av-wrap">
+          <label class="set-av-preview user-prev" id="prev-user" for="inp-user-img" title="点击上传图片">
+            <span class="set-av-cam">📷</span>
+          </label>
+          <input type="file" id="inp-user-img" accept="image/*" style="display:none" />
+        </div>
+        <div class="set-av-desc">
+          点击头像上传图片<br>
+          <small>支持 JPG / PNG / GIF · 自动压缩</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- User nickname -->
+    <div class="set-row">
+      <div class="set-label">我的昵称</div>
+      <input class="set-name-input" id="set-user-name" placeholder="你的名字" maxlength="20" />
+    </div>
+
+    <hr class="set-divider" />
+
+    <!-- AI avatar -->
+    <div class="set-row">
+      <div class="set-label">小白的头像</div>
+      <div class="set-av-row">
+        <div class="set-av-wrap">
+          <label class="set-av-preview ai-prev" id="prev-ai" for="inp-ai-img" title="点击上传图片">
+            <span class="set-av-cam">📷</span>
+          </label>
+          <input type="file" id="inp-ai-img" accept="image/*" style="display:none" />
+        </div>
+        <div class="set-av-desc">
+          点击头像上传图片<br>
+          <small>支持 JPG / PNG / GIF · 自动压缩</small>
+        </div>
+      </div>
+    </div>
+
+    <button class="set-save" onclick="saveSettings()">保存设置</button>
+
+    <hr class="set-divider" />
+
+    <button class="set-save" onclick="confirmClearChat()"
+      style="background:none;border:1px solid rgba(239,68,68,.35);color:var(--err);margin-top:0;">
+      <i class="fa-solid fa-trash-can" style="margin-right:6px;"></i>清空聊天记录
+    </button>
+  </div>
+</div>
+
+<!-- ── Model Picker Modal ── -->
+<div class="model-modal-overlay" id="model-modal-overlay" style="display:none" onclick="overlayCloseModel(event)">
+  <div class="model-modal" id="model-modal">
+    <div class="model-modal-head">
+      <span class="model-modal-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        选择模型
+      </span>
+      <button class="model-modal-close" onclick="closeModelPicker()" title="关闭 (Esc)">✕</button>
+    </div>
+    <div class="model-modal-body">
+      <div class="mmodal-sidebar" id="mmodal-sidebar"></div>
+      <div class="mmodal-content" id="mmodal-content"></div>
+    </div>
+    <div class="model-modal-foot">
+      <div class="modal-sel-info">
+        <span class="modal-sel-label">当前选择</span>
+        <span class="modal-sel-provider" id="modal-sel-provider">GPT4Novel</span>
+        <span class="modal-sel-name" id="modal-sel-name">XL 16K ★</span>
+      </div>
+      <button class="model-modal-confirm" onclick="closeModelPicker()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 人格控制 Modal ── -->
+<div class="pers-overlay" id="pers-overlay" style="display:none" onclick="overlayClosePersonality(event)">
+  <div class="pers-modal" id="pers-modal">
+    <div class="pers-head">
+      <span class="pers-title">
+        <i class="fa-solid fa-sliders" style="color:#6366f1"></i>
+        人格控制
+      </span>
+      <button class="pers-close" onclick="closePersonality()" title="关闭 (Esc)">✕</button>
+    </div>
+    <div class="pers-body">
+
+      <!-- 左侧 Tab 列表 -->
+      <div class="pers-tabs">
+        <button class="pers-tab active" data-tab="identity"          onclick="switchPersTab('identity')">         <span class="pers-tab-icon">🪪</span>身份</button>
+        <button class="pers-tab"        data-tab="character"         onclick="switchPersTab('character')">        <span class="pers-tab-icon">✨</span>性格</button>
+        <button class="pers-tab"        data-tab="language"          onclick="switchPersTab('language')">         <span class="pers-tab-icon">💬</span>语言</button>
+        <button class="pers-tab"        data-tab="output"            onclick="switchPersTab('output')">           <span class="pers-tab-icon">📋</span>输出</button>
+        <button class="pers-tab"        data-tab="interaction"       onclick="switchPersTab('interaction')">      <span class="pers-tab-icon">🤝</span>互动</button>
+        <button class="pers-tab"        data-tab="prohibitions"      onclick="switchPersTab('prohibitions')">     <span class="pers-tab-icon">🚫</span>禁令</button>
+        <button class="pers-tab"        data-tab="memory_priority"   onclick="switchPersTab('memory_priority')">  <span class="pers-tab-icon">🧠</span>记忆</button>
+        <button class="pers-tab"        data-tab="self_check"        onclick="switchPersTab('self_check')">       <span class="pers-tab-icon">🔍</span>自检</button>
+        <button class="pers-tab"        data-tab="anti_hallucination" onclick="switchPersTab('anti_hallucination')"><span class="pers-tab-icon">🛡️</span>防幻觉</button>
+        <button class="pers-tab"        data-tab="preview"           onclick="switchPersTab('preview')">          <span class="pers-tab-icon">👁️</span>预览</button>
+      </div>
+
+      <!-- 右侧内容区 -->
+      <div class="pers-content">
+
+        <!-- 身份认知 -->
+        <div class="pers-panel active" id="pers-panel-identity">
+          <div class="pers-section-title">🪪 身份认知</div>
+          <div class="pers-section-desc">定义 AI 的角色名称、身份背景与和用户的关系定位。这是人格的核心基础，AI 会始终以此认知自己。</div>
+          <div class="pers-field">
+            <label class="pers-label">角色名称</label>
+            <input class="pers-input" id="p-identity-name" placeholder="例：小白" style="max-width:200px" />
+          </div>
+          <div class="pers-field">
+            <label class="pers-label">身份背景</label>
+            <textarea class="pers-textarea" id="p-identity-background" rows="3" placeholder="描述 AI 的身份设定…"></textarea>
+          </div>
+          <div class="pers-field">
+            <label class="pers-label">关系定位</label>
+            <textarea class="pers-textarea" id="p-identity-relationship" rows="2" placeholder="AI 与用户的关系…"></textarea>
+          </div>
+        </div>
+
+        <!-- 性格特征 -->
+        <div class="pers-panel" id="pers-panel-character">
+          <div class="pers-section-title">✨ 性格特征</div>
+          <div class="pers-section-desc">核心性格特质（AI 应具备的）与禁止倾向（AI 不应表现的）。每条独立成项，拖拽可调整顺序。</div>
+          <div class="pers-field">
+            <label class="pers-label">核心性格特质</label>
+            <div class="pers-list" id="list-core_traits"></div>
+            <div class="pers-add-row">
+              <textarea class="pers-add-input" id="add-core_traits" rows="1" placeholder="添加新的性格特质…"></textarea>
+              <button class="pers-add-btn" onclick="addListItem('core_traits')">+ 添加</button>
+            </div>
+          </div>
+          <div class="pers-field">
+            <label class="pers-label">禁止倾向</label>
+            <div class="pers-list" id="list-forbidden_tendencies"></div>
+            <div class="pers-add-row">
+              <textarea class="pers-add-input" id="add-forbidden_tendencies" rows="1" placeholder="添加禁止的性格倾向…"></textarea>
+              <button class="pers-add-btn" onclick="addListItem('forbidden_tendencies')">+ 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 语言风格 -->
+        <div class="pers-panel" id="pers-panel-language">
+          <div class="pers-section-title">💬 语言风格</div>
+          <div class="pers-section-desc">控制 AI 的整体语言风格、自称用词、表情使用频率和特殊句式开关。</div>
+          <div class="pers-field">
+            <label class="pers-label">整体语言风格</label>
+            <textarea class="pers-textarea" id="p-language-style" rows="2"></textarea>
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div class="pers-field" style="flex:0 0 auto">
+              <label class="pers-label">自称用词</label>
+              <input class="pers-input" id="p-language-self_reference" style="max-width:100px" />
+            </div>
+            <div class="pers-field" style="flex:0 0 auto">
+              <label class="pers-label">每次最多问句数</label>
+              <input type="number" class="pers-number" id="p-language-max_questions" min="0" max="5" />
+            </div>
+          </div>
+          <div class="pers-toggle-row">
+            <span class="pers-toggle-label">允许使用 emoji / 颜文字</span>
+            <label class="pers-toggle"><input type="checkbox" id="p-language-emoji_allowed" onchange="toggleEmojiFreqField(this.checked)" /><span class="pers-toggle-slider"></span></label>
+          </div>
+          <div class="pers-field" id="p-emoji-freq-field">
+            <label class="pers-label">Emoji 使用频率说明</label>
+            <input class="pers-input" id="p-language-emoji_frequency" placeholder="例：适中，不会每句都加" />
+          </div>
+          <div class="pers-toggle-row">
+            <span class="pers-toggle-label">允许（括号动作描述）</span>
+            <label class="pers-toggle"><input type="checkbox" id="p-language-action_parentheses" /><span class="pers-toggle-slider"></span></label>
+          </div>
+          <div class="pers-toggle-row">
+            <span class="pers-toggle-label">允许 ~~删除线想法~~</span>
+            <label class="pers-toggle"><input type="checkbox" id="p-language-strikethrough_thoughts" /><span class="pers-toggle-slider"></span></label>
+          </div>
+        </div>
+
+        <!-- 输出规范 -->
+        <div class="pers-panel" id="pers-panel-output">
+          <div class="pers-section-title">📋 输出规范</div>
+          <div class="pers-section-desc">控制回复格式相关的硬性规则，这些规则会直接写入语言规范部分。</div>
+          <div class="pers-field">
+            <label class="pers-label">格式规则</label>
+            <div class="pers-list" id="list-format_rules"></div>
+            <div class="pers-add-row">
+              <textarea class="pers-add-input" id="add-format_rules" rows="1" placeholder="添加新的格式规则…"></textarea>
+              <button class="pers-add-btn" onclick="addListItem('format_rules')">+ 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 互动方式 -->
+        <div class="pers-panel" id="pers-panel-interaction">
+          <div class="pers-section-title">🤝 互动方式</div>
+          <div class="pers-section-desc">AI 与用户互动的具体行为特征，描述 AI 的聆听、共情和话题延续能力。</div>
+          <div class="pers-field">
+            <label class="pers-label">互动特征</label>
+            <div class="pers-list" id="list-interaction_traits"></div>
+            <div class="pers-add-row">
+              <textarea class="pers-add-input" id="add-interaction_traits" rows="1" placeholder="添加互动特征…"></textarea>
+              <button class="pers-add-btn" onclick="addListItem('interaction_traits')">+ 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 禁止事项 -->
+        <div class="pers-panel" id="pers-panel-prohibitions">
+          <div class="pers-section-title">🚫 禁止事项</div>
+          <div class="pers-section-desc">明确列出 AI 绝对不能做的行为，以最高优先级写入 system prompt，任何用户指令都不得违反。</div>
+          <div class="pers-field">
+            <label class="pers-label">禁止事项</label>
+            <div class="pers-list" id="list-prohibitions_items"></div>
+            <div class="pers-add-row">
+              <textarea class="pers-add-input" id="add-prohibitions_items" rows="1" placeholder="添加禁止事项…"></textarea>
+              <button class="pers-add-btn" onclick="addListItem('prohibitions_items')">+ 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 记忆优先级 -->
+        <div class="pers-panel" id="pers-panel-memory_priority">
+          <div class="pers-section-title">🧠 记忆优先级</div>
+          <div class="pers-section-desc">控制 AI 在处理长对话上下文时，人格设定、历史记忆与当前输入的优先级关系。</div>
+          <div class="pers-field">
+            <label class="pers-label">优先级规则</label>
+            <div class="pers-list" id="list-memory_priority_rules"></div>
+            <div class="pers-add-row">
+              <textarea class="pers-add-input" id="add-memory_priority_rules" rows="1" placeholder="添加记忆规则…"></textarea>
+              <button class="pers-add-btn" onclick="addListItem('memory_priority_rules')">+ 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 输出自检 -->
+        <div class="pers-panel" id="pers-panel-self_check">
+          <div class="pers-section-title">🔍 输出自检</div>
+          <div class="pers-section-desc">AI 在生成每条回复前，按以下步骤检查并修正自身输出，防止人格漂移。启用"防幻觉"时会自动追加事实核查步骤。</div>
+          <div class="pers-toggle-row">
+            <span class="pers-toggle-label">启用输出自检</span>
+            <label class="pers-toggle"><input type="checkbox" id="p-self_check-enabled" /><span class="pers-toggle-slider"></span></label>
+          </div>
+          <div class="pers-field">
+            <label class="pers-label">自检步骤（按顺序执行）</label>
+            <div class="pers-list" id="list-self_check_steps"></div>
+            <div class="pers-add-row">
+              <textarea class="pers-add-input" id="add-self_check_steps" rows="1" placeholder="添加自检步骤…"></textarea>
+              <button class="pers-add-btn" onclick="addListItem('self_check_steps')">+ 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 防止幻觉 -->
+        <div class="pers-panel" id="pers-panel-anti_hallucination">
+          <div class="pers-section-title">🛡️ 防止幻觉</div>
+          <div class="pers-section-desc">约束 AI 不得编造关于用户的信息，遇到不确定事项时必须如实承认，并在自检环节自动追加事实核查步骤。</div>
+          <div class="pers-toggle-row">
+            <span class="pers-toggle-label">启用防幻觉规则</span>
+            <label class="pers-toggle"><input type="checkbox" id="p-anti_hallucination-enabled" /><span class="pers-toggle-slider"></span></label>
+          </div>
+          <div class="pers-field">
+            <label class="pers-label">防幻觉规则</label>
+            <div class="pers-list" id="list-anti_hallucination_rules"></div>
+            <div class="pers-add-row">
+              <textarea class="pers-add-input" id="add-anti_hallucination_rules" rows="1" placeholder="添加防幻觉规则…"></textarea>
+              <button class="pers-add-btn" onclick="addListItem('anti_hallucination_rules')">+ 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Prompt 预览 -->
+        <div class="pers-panel" id="pers-panel-preview">
+          <div class="pers-section-title">👁️ System Prompt 预览</div>
+          <div class="pers-section-desc">以下是根据当前已保存配置动态生成的 system prompt（占位符 {memory_section} / {history_section} 由运行时填充）。</div>
+          <button class="pers-preview-refresh" onclick="refreshPersPreview()">
+            <i class="fa-solid fa-rotate"></i> 刷新预览
+          </button>
+          <pre class="pers-preview-box" id="pers-preview-box">点击「刷新预览」加载当前 system prompt…</pre>
+        </div>
+
+      </div><!-- /pers-content -->
+    </div><!-- /pers-body -->
+
+    <!-- 底部操作栏 -->
+    <div class="pers-foot">
+      <button class="pers-reset" onclick="resetPersonality()">
+        <i class="fa-solid fa-rotate-left"></i> 重置默认
+      </button>
+      <span class="pers-status" id="pers-status"></span>
+      <button class="pers-save" onclick="savePersonality()">
+        <i class="fa-solid fa-check"></i> 保存并生效
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let busy = false;
+
+/* ─────────────────────────────────────────
+   Model picker
+───────────────────────────────────────── */
+const MODEL_PROVIDERS = [
+  // ── 国内供应商 ──
+  {
+    id: 'gpt4novel', name: 'GPT4Novel',
+    groups: [
+      { label: 'Max 旗舰 $0.4/M', models: [
+        { value: 'nalang-max-0826-10k', label: 'Max 10K' },
+        { value: 'nalang-max-0826-16k', label: 'Max 16K' },
+        { value: 'nalang-max-0826',     label: 'Max 32K' },
+      ]},
+      { label: 'XL 大模型 $0.3/M', models: [
+        { value: 'nalang-xl-0826-10k',  label: 'XL 10K' },
+        { value: 'nalang-xl-0826-16k',  label: 'XL 16K ★' },
+        { value: 'nalang-xl-0826',      label: 'XL 32K' },
+      ]},
+      { label: 'Medium 均衡 $0.2/M', models: [
+        { value: 'nalang-medium-0826',  label: 'Medium 32K' },
+      ]},
+      { label: 'Turbo 快速 $0.1/M', models: [
+        { value: 'nalang-turbo-0826',   label: 'Turbo 32K' },
+      ]},
+    ]
+  },
+  {
+    id: 'deepseek', name: 'DeepSeek',
+    groups: [
+      { label: '旗舰模型', models: [
+        { value: 'deepseek-v4-pro',   label: 'DeepSeek V4 Pro' },
+      ]},
+      { label: '快速模型', models: [
+        { value: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash ★' },
+      ]},
+      { label: '对话/推理 (旧)', models: [
+        { value: 'deepseek-chat',     label: 'DeepSeek Chat' },
+        { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
+      ]},
+    ]
+  },
+  {
+    id: 'qwen', name: '通义千问',
+    groups: [
+      { label: 'Qwen 3.5 闭源', models: [
+        { value: 'qwen3.5-max',   label: 'Qwen 3.5 Max ★' },
+        { value: 'qwen3.5-plus',  label: 'Qwen 3.5 Plus' },
+        { value: 'qwen3.5-turbo', label: 'Qwen 3.5 Turbo' },
+      ]},
+      { label: 'Qwen 3 开源', models: [
+        { value: 'qwen3-235b-a22b', label: 'Qwen3 235B' },
+        { value: 'qwen3-32b',       label: 'Qwen3 32B' },
+      ]},
+      { label: 'Qwen 2.5 开源', models: [
+        { value: 'qwen2.5-72b-instruct',  label: 'Qwen2.5 72B' },
+        { value: 'qwen2.5-32b-instruct',  label: 'Qwen2.5 32B' },
+        { value: 'qwq-32b',               label: 'QwQ 32B' },
+      ]},
+    ]
+  },
+  {
+    id: 'zhipu', name: '智谱AI',
+    groups: [
+      { label: '旗舰模型', models: [
+        { value: 'glm-4-plus',  label: 'GLM-4 Plus' },
+        { value: 'glm-4',       label: 'GLM-4' },
+      ]},
+      { label: '快速模型', models: [
+        { value: 'glm-4-air',   label: 'GLM-4 Air ★' },
+        { value: 'glm-4-flash', label: 'GLM-4 Flash' },
+      ]},
+    ]
+  },
+  {
+    id: 'moonshot', name: '月之暗面',
+    groups: [
+      { label: 'Kimi K2.5', models: [
+        { value: 'moonshot-k2.5', label: 'Kimi K2.5 ★' },
+      ]},
+      { label: 'Moonshot v1 (旧)', models: [
+        { value: 'moonshot-v1-8k',   label: 'Moonshot 8K' },
+        { value: 'moonshot-v1-32k',  label: 'Moonshot 32K' },
+        { value: 'moonshot-v1-128k', label: 'Moonshot 128K' },
+      ]},
+    ]
+  },
+  {
+    id: 'minimax', name: 'MiniMax',
+    groups: [
+      { label: '对话模型', models: [
+        { value: 'MiniMax-Text-01', label: 'MiniMax Text-01' },
+        { value: 'abab6.5s-chat',   label: 'ABAB 6.5s ★' },
+        { value: 'abab6.5g-chat',   label: 'ABAB 6.5g' },
+        { value: 'abab5.5s-chat',   label: 'ABAB 5.5s' },
+      ]},
+    ]
+  },
+  {
+    id: 'doubao', name: '豆包',
+    groups: [
+      { label: 'Seed 2.0 系列', models: [
+        { value: 'doubao-seed-2.0-max', label: 'Seed 2.0 Max' },
+        { value: 'doubao-seed-2.0-pro', label: 'Seed 2.0 Pro ★' },
+      ]},
+      { label: 'Pro 系列 (旧)', models: [
+        { value: 'doubao-pro-32k',  label: 'Pro 32K' },
+        { value: 'doubao-pro-128k', label: 'Pro 128K' },
+      ]},
+      { label: 'Lite 系列', models: [
+        { value: 'doubao-lite-32k',  label: 'Lite 32K' },
+        { value: 'doubao-lite-128k', label: 'Lite 128K' },
+      ]},
+    ]
+  },
+  {
+    id: 'baidu', name: '文心一言',
+    groups: [
+      { label: '旗舰模型', models: [
+        { value: 'ernie-5.0', label: 'ERNIE 5.0 ★' },
+      ]},
+      { label: '快速模型', models: [
+        { value: 'ernie-speed-128k', label: 'ERNIE Speed 128K' },
+        { value: 'ernie-lite-8k',    label: 'ERNIE Lite 8K' },
+      ]},
+    ]
+  },
+  {
+    id: 'baichuan', name: '百川',
+    groups: [
+      { label: '旗舰模型', models: [
+        { value: 'Baichuan4',             label: 'Baichuan4 ★' },
+      ]},
+      { label: '快速模型', models: [
+        { value: 'Baichuan3-Turbo',       label: 'Baichuan3 Turbo' },
+        { value: 'Baichuan3-Turbo-128k',  label: 'Baichuan3 Turbo 128K' },
+      ]},
+    ]
+  },
+  {
+    id: 'stepfun', name: '阶跃星辰',
+    groups: [
+      { label: '旗舰模型', models: [
+        { value: 'step-2-16k',   label: 'Step-2 16K ★' },
+      ]},
+      { label: '快速模型', models: [
+        { value: 'step-1-8k',   label: 'Step-1 8K' },
+        { value: 'step-1-32k',  label: 'Step-1 32K' },
+        { value: 'step-1-128k', label: 'Step-1 128K' },
+      ]},
+    ]
+  },
+  {
+    id: 'lingyi', name: '零一万物',
+    groups: [
+      { label: 'Yi 模型', models: [
+        { value: 'yi-lightning',    label: 'Yi Lightning ★' },
+        { value: 'yi-large',        label: 'Yi Large' },
+        { value: 'yi-large-turbo',  label: 'Yi Large Turbo' },
+      ]},
+    ]
+  },
+  {
+    id: 'hunyuan', name: '腾讯混元',
+    groups: [
+      { label: '旗舰模型', models: [
+        { value: 'hunyuan-turbo', label: 'Hunyuan Turbo ★' },
+        { value: 'hunyuan-pro',   label: 'Hunyuan Pro' },
+      ]},
+      { label: '快速模型', models: [
+        { value: 'hunyuan-lite',     label: 'Hunyuan Lite' },
+        { value: 'hunyuan-standard', label: 'Hunyuan Standard' },
+      ]},
+    ]
+  },
+  {
+    id: 'siliconflow', name: '硅基流动',
+    groups: [
+      { label: 'Qwen 系列', models: [
+        { value: 'Qwen/Qwen2.5-72B-Instruct', label: 'Qwen2.5 72B ★' },
+        { value: 'Qwen/Qwen2.5-32B-Instruct', label: 'Qwen2.5 32B' },
+        { value: 'Qwen/QwQ-32B',              label: 'QwQ 32B' },
+      ]},
+      { label: 'DeepSeek 系列', models: [
+        { value: 'deepseek-ai/DeepSeek-V3', label: 'DeepSeek V3' },
+        { value: 'deepseek-ai/DeepSeek-R1', label: 'DeepSeek R1' },
+      ]},
+      { label: 'Llama 系列', models: [
+        { value: 'meta-llama/Llama-3.3-70B-Instruct', label: 'Llama 3.3 70B' },
+        { value: 'meta-llama/Meta-Llama-3.1-8B-Instruct', label: 'Llama 3.1 8B' },
+      ]},
+    ]
+  },
+  // ── 国际供应商 ──
+  {
+    id: 'openai', name: 'OpenAI',
+    groups: [
+      { label: 'GPT-5 系列', models: [
+        { value: 'gpt-5',      label: 'GPT-5 ★' },
+        { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+        { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+      ]},
+      { label: 'GPT-4o 系列', models: [
+        { value: 'gpt-4o',      label: 'GPT-4o' },
+        { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+      ]},
+      { label: 'o 系列推理', models: [
+        { value: 'o4',      label: 'o4' },
+        { value: 'o3',      label: 'o3' },
+        { value: 'o3-mini', label: 'o3 Mini' },
+        { value: 'o1',      label: 'o1' },
+        { value: 'o1-mini', label: 'o1 Mini' },
+      ]},
+      { label: 'GPT-3.5', models: [
+        { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+      ]},
+    ]
+  },
+  {
+    id: 'anthropic', name: 'Claude',
+    groups: [
+      { label: 'Claude 4 系列', models: [
+        { value: 'claude-opus-4-7',           label: 'Claude Opus 4.7' },
+        { value: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6 ★' },
+        { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+      ]},
+    ]
+  },
+  {
+    id: 'gemini', name: 'Gemini',
+    groups: [
+      { label: 'Gemini 2.5', models: [
+        { value: 'gemini-2.5-pro',   label: '2.5 Pro ★' },
+        { value: 'gemini-2.5-flash', label: '2.5 Flash' },
+      ]},
+      { label: 'Gemini 2.0', models: [
+        { value: 'gemini-2.0-flash',               label: '2.0 Flash' },
+        { value: 'gemini-2.0-flash-thinking-exp',  label: '2.0 Flash Thinking' },
+      ]},
+      { label: 'Gemini 1.5', models: [
+        { value: 'gemini-1.5-pro',   label: '1.5 Pro' },
+        { value: 'gemini-1.5-flash', label: '1.5 Flash' },
+      ]},
+    ]
+  },
+  {
+    id: 'mistral', name: 'Mistral',
+    groups: [
+      { label: '旗舰模型', models: [
+        { value: 'mistral-large-latest',  label: 'Mistral Large ★' },
+        { value: 'mistral-medium-latest', label: 'Mistral Medium' },
+      ]},
+      { label: '快速模型', models: [
+        { value: 'mistral-small-latest', label: 'Mistral Small' },
+        { value: 'open-mistral-7b',      label: 'Mistral 7B' },
+      ]},
+    ]
+  },
+  {
+    id: 'groq', name: 'Groq',
+    groups: [
+      { label: 'Llama 系列', models: [
+        { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B ★' },
+        { value: 'llama-3.1-70b-versatile', label: 'Llama 3.1 70B' },
+        { value: 'llama-3.1-8b-instant',    label: 'Llama 3.1 8B' },
+      ]},
+      { label: '其他模型', models: [
+        { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
+        { value: 'gemma2-9b-it',       label: 'Gemma2 9B' },
+      ]},
+    ]
+  },
+  {
+    id: 'openrouter', name: 'OpenRouter',
+    groups: [
+      { label: 'Claude 系列', models: [
+        { value: 'anthropic/claude-opus-4-7',   label: 'Claude Opus 4.7 ★' },
+        { value: 'anthropic/claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+        { value: 'anthropic/claude-haiku-4-5',  label: 'Claude Haiku 4.5' },
+      ]},
+      { label: 'GPT 系列', models: [
+        { value: 'openai/gpt-5',       label: 'GPT-5' },
+        { value: 'openai/gpt-4o',      label: 'GPT-4o' },
+        { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
+      ]},
+      { label: 'Gemini 系列', models: [
+        { value: 'google/gemini-2.5-pro',            label: 'Gemini 2.5 Pro' },
+        { value: 'google/gemini-2.5-flash',          label: 'Gemini 2.5 Flash' },
+        { value: 'google/gemini-2.0-flash-exp:free', label: 'Gemini 2.0 Flash' },
+      ]},
+      { label: 'DeepSeek 系列', models: [
+        { value: 'deepseek/deepseek-v4-pro',   label: 'DeepSeek V4 Pro' },
+        { value: 'deepseek/deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
+        { value: 'deepseek/deepseek-chat',     label: 'DeepSeek V3' },
+        { value: 'deepseek/deepseek-r1',       label: 'DeepSeek R1' },
+      ]},
+    ]
+  },
+  // ── 自定义 ──
+  { id: 'custom', name: '自定义', custom: true, groups: [] },
+];
+
+const CUSTOM_PROVIDER_KEY = 'xb_custom_provider';
+
+function loadCustomConfig() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_PROVIDER_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveCustomConfig(cfg) {
+  try { localStorage.setItem(CUSTOM_PROVIDER_KEY, JSON.stringify(cfg)); } catch {}
+}
+function updateCustomConfig(key, value) {
+  const cfg = loadCustomConfig();
+  cfg[key] = value;
+  saveCustomConfig(cfg);
+}
+
+let _activeProviderId = 'gpt4novel';
+let _selectedModel = {
+  value: 'nalang-xl-0826-16k',
+  label: 'XL 16K ★',
+  providerName: 'GPT4Novel',
+  providerId: 'gpt4novel',
+};
+
+// 已配置 API Key 的供应商集合（从后端加载）
+let _configuredProviders = new Set(['gpt4novel', 'custom']);
+
+async function fetchConfiguredProviders() {
+  try {
+    const r = await fetch(`${API}/api/providers`);
+    if (!r.ok) return;
+    const d = await r.json();
+    _configuredProviders = new Set(
+      (d.providers || []).filter(p => p.configured).map(p => p.id)
+    );
+  } catch {}
+}
+
+// 供应商分组：用于左侧列表插入区域标题
+const PROVIDER_REGIONS = {
+  cn:   ['gpt4novel','deepseek','qwen','zhipu','moonshot','minimax',
+         'doubao','baidu','baichuan','stepfun','lingyi','hunyuan','siliconflow'],
+  intl: ['openai','anthropic','gemini','mistral','groq','openrouter'],
+};
+
+function getSelectedModelValue() { return _selectedModel.value; }
+
+/* ── 渲染左侧供应商列表 ── */
+function renderSidebar() {
+  const el = document.getElementById('mmodal-sidebar');
+  if (!el) return;
+  let html = '';
+  let lastRegion = null;
+  MODEL_PROVIDERS.forEach(p => {
+    // 插入区域标题
+    const region = PROVIDER_REGIONS.cn.includes(p.id)   ? 'cn'
+                 : PROVIDER_REGIONS.intl.includes(p.id) ? 'intl'
+                 : 'custom';
+    if (region !== lastRegion) {
+      const label = region === 'cn' ? '国内' : region === 'intl' ? '国际' : '自定义';
+      html += `<div class="mmodal-section-label">${label}</div>`;
+      lastRegion = region;
+    }
+    const dot = _configuredProviders.has(p.id)
+      ? `<span class="mmodal-prov-dot"></span>` : '';
+    html += `<button class="mmodal-prov-btn${p.id === _activeProviderId ? ' active' : ''}"
+      data-prov-id="${p.id}" onclick="switchModelProvider('${p.id}')">
+      <span class="mmodal-prov-name">${p.name}</span>${dot}</button>`;
+  });
+  el.innerHTML = html;
+}
+
+/* ── 渲染右侧模型列表 ── */
+function renderContent() {
+  const el = document.getElementById('mmodal-content');
+  if (!el) return;
+  const prov = MODEL_PROVIDERS.find(p => p.id === _activeProviderId);
+  if (!prov) return;
+
+  if (prov.custom) {
+    const cfg = loadCustomConfig();
+    const fmtOpts = [
+      { v: 'openai',   l: 'OpenAI 兼容（推荐）' },
+      { v: 'standard', l: '含扩展参数（GPT4Novel 风格）' },
+      { v: 'minimal',  l: '精简（仅基础参数）' },
+    ].map(o => `<option value="${o.v}"${(cfg.format||'openai')===o.v?' selected':''}>${o.l}</option>`).join('');
+    el.innerHTML = `
+      <div class="mpanel-custom">
+        <div class="mpanel-custom-row">
+          <label>API 地址</label>
+          <input id="cp-url" type="url" placeholder="https://api.example.com/v1"
+                 value="${esc(cfg.base_url||'')}"
+                 oninput="updateCustomConfig('base_url',this.value)" />
+        </div>
+        <div class="mpanel-custom-row">
+          <label>API 密钥</label>
+          <input id="cp-key" type="password" placeholder="sk-…"
+                 value="${esc(cfg.api_key||'')}"
+                 oninput="updateCustomConfig('api_key',this.value)" />
+        </div>
+        <div class="mpanel-custom-row">
+          <label>模型名称</label>
+          <input id="cp-model" type="text" placeholder="例如: gpt-4o / deepseek-chat"
+                 value="${esc(cfg.model||'')}"
+                 oninput="updateCustomConfig('model',this.value)" />
+        </div>
+        <div class="mpanel-custom-row">
+          <label>调用格式</label>
+          <select id="cp-format" onchange="updateCustomConfig('format',this.value)">${fmtOpts}</select>
+        </div>
+        <button class="mpanel-custom-apply" onclick="applyCustomModel()">应用自定义模型</button>
+      </div>`;
+    return;
+  }
+
+  // ── API 密钥卡片 ──
+  const configured = _configuredProviders.has(prov.id);
+  const badgeCls   = configured ? ' ok' : '';
+  const badgeTxt   = configured ? '✓ 已配置' : '未配置';
+  const placeholder = configured ? '已配置 — 输入新值可覆盖' : `粘贴 ${prov.name} API Key…`;
+  const keyCard = `
+    <div class="mmodal-key-card">
+      <div class="mmodal-key-head">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="15" r="4"/><path d="m21 2-9.6 9.6M15 3l3 3"/>
+        </svg>
+        API 密钥
+        <span class="mmodal-key-badge${badgeCls}" id="key-badge-${prov.id}">${badgeTxt}</span>
+      </div>
+      <div class="mmodal-key-row">
+        <input class="mmodal-key-input" id="key-input-${prov.id}"
+               type="password" placeholder="${placeholder}"
+               onkeydown="if(event.key==='Enter')saveProviderKey('${prov.id}')" />
+        <button class="mmodal-key-save" id="key-save-${prov.id}"
+                onclick="saveProviderKey('${prov.id}')">保存</button>
+      </div>
+      <div class="mmodal-key-hint">密钥保存至本地 .env 文件，重启后持续生效</div>
+    </div>
+    <div class="mmodal-models-sep">可用模型</div>`;
+
+  // ── 模型列表 ──
+  const modelList = prov.groups.map(g =>
+    `<div class="mpanel-group-label">${g.label}</div>` +
+    g.models.map(m =>
+      `<button class="mpanel-model-btn${m.value === _selectedModel.value ? ' selected' : ''}"
+         onclick="selectModelItem('${prov.id}','${prov.name}','${m.value}','${m.label.replace(/'/g,"\\'")}')">
+         <span class="mpanel-model-dot"></span>${m.label}</button>`
+    ).join('')
+  ).join('');
+
+  el.innerHTML = keyCard + modelList;
+}
+
+/* ── 保存 API Key 到后端 .env ── */
+async function saveProviderKey(provId) {
+  const input = document.getElementById(`key-input-${provId}`);
+  const btn   = document.getElementById(`key-save-${provId}`);
+  const badge = document.getElementById(`key-badge-${provId}`);
+  const key   = (input?.value || '').trim();
+  if (!key) { input?.focus(); return; }
+
+  btn.disabled = true;
+  btn.textContent = '保存中…';
+  try {
+    const r = await fetch(`${API}/api/providers/${provId}/key`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: key }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+    // 更新本地配置状态
+    _configuredProviders.add(provId);
+    input.value = '';
+    input.placeholder = '已保存 ✓ — 输入新值可覆盖';
+    btn.textContent = '✓ 已保存';
+    if (badge) { badge.textContent = '✓ 已配置'; badge.className = 'mmodal-key-badge ok'; }
+    // 同步更新左侧绿点
+    renderSidebar();
+    // 2 秒后恢复按钮
+    setTimeout(() => { btn.textContent = '保存'; btn.disabled = false; }, 2000);
+  } catch (e) {
+    btn.textContent = '保存失败';
+    btn.style.background = 'var(--err)';
+    setTimeout(() => {
+      btn.textContent = '保存'; btn.disabled = false;
+      btn.style.background = '';
+    }, 2500);
+  }
+}
+
+/* ── 联合渲染 ── */
+function renderModelPicker() {
+  renderSidebar();
+  renderContent();
+}
+
+function applyCustomModel() {
+  const cfg = loadCustomConfig();
+  const model = (cfg.model || '').trim();
+  const url   = (cfg.base_url || '').trim();
+  if (!model || !url) { alert('请填写 API 地址和模型名称'); return; }
+  selectModelItem('custom', '自定义', model, model);
+}
+
+function switchModelProvider(id) {
+  _activeProviderId = id;
+  // 只更新左侧 active 状态和右侧内容，不整体重建 DOM
+  document.querySelectorAll('.mmodal-prov-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.provId === id)
+  );
+  renderContent();
+  const content = document.getElementById('mmodal-content');
+  if (content) content.scrollTop = 0;
+}
+
+/* 更新弹窗底部"当前选择"显示 */
+function updateModalFooter() {
+  const pEl = document.getElementById('modal-sel-provider');
+  const nEl = document.getElementById('modal-sel-name');
+  if (pEl) pEl.textContent = _selectedModel.providerName;
+  if (nEl) nEl.textContent = _selectedModel.label;
+}
+
+function selectModelItem(provId, provName, val, label) {
+  _activeProviderId = provId;
+  _selectedModel = { value: val, label, providerName: provName, providerId: provId };
+  // 立即同步顶栏按钮
+  document.getElementById('model-btn-provider').textContent = provName;
+  document.getElementById('model-btn-name').textContent     = label;
+  // 刷新高亮 + 底部显示；弹窗保持打开，等待用户点"确定"
+  renderContent();
+  updateModalFooter();
+}
+
+function toggleModelPicker() {
+  const overlay = document.getElementById('model-modal-overlay');
+  if (overlay.style.display === 'none') {
+    overlay.style.display = 'flex';
+    document.getElementById('model-btn').classList.add('open');
+    fetchConfiguredProviders().then(() => renderModelPicker());
+    renderModelPicker();
+    updateModalFooter();
+    // 滚动到当前选中供应商
+    setTimeout(() => {
+      const activeBtn = document.querySelector('.mmodal-prov-btn.active');
+      if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest' });
+    }, 60);
+    // 滚动到当前选中模型
+    setTimeout(() => {
+      const selModel = document.querySelector('.mpanel-model-btn.selected');
+      if (selModel) selModel.scrollIntoView({ block: 'nearest' });
+    }, 80);
+  } else {
+    closeModelPicker();
+  }
+}
+
+function closeModelPicker() {
+  document.getElementById('model-modal-overlay').style.display = 'none';
+  document.getElementById('model-btn').classList.remove('open');
+}
+
+function overlayCloseModel(e) {
+  if (e.target === document.getElementById('model-modal-overlay')) closeModelPicker();
+}
+
+// Esc 键关闭弹窗
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModelPicker();
+});
+let ctxTimeLocation = '';
+let _weatherStr = '';
+
+/* ─────────────────────────────────────────
+   Settings (localStorage)
+───────────────────────────────────────── */
+const DEFAULT_SETTINGS = { userName: '用户' };
+// Default avatar image paths (shown when no custom image uploaded)
+const DEFAULT_IMGS = {
+  user: 'images/avatar/user_default.png',
+  ai:   'images/avatar/xiaobai_default.png',
+};
+
+let _settings = { ...DEFAULT_SETTINGS };
+// In-memory custom image store (base64 JPEG or null)
+const _imgs = { user: null, ai: null };
+
+function loadSettings() {
+  if (localStorage.getItem('xb_user_img') === '[object Blob]') {
+    localStorage.removeItem('xb_user_img');
+  }
+  if (localStorage.getItem('xb_ai_img') === '[object Blob]') {
+    localStorage.removeItem('xb_ai_img');
+  }
+  try {
+    const s = JSON.parse(localStorage.getItem('xb_settings') || '{}');
+    _settings = { ...DEFAULT_SETTINGS, ...s };
+  } catch {}
+  _imgs.user = localStorage.getItem('xb_user_img') || null;
+  _imgs.ai   = localStorage.getItem('xb_ai_img')   || null;
+  applySettings();
+}
+
+// Compress uploaded image to max 480×480 JPEG, returns a Blob via callback
+function compressImg(dataUrl, callback) {
+  const img = new Image();
+  img.onload = () => {
+    const MAX = 480;
+    const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+    const c = document.createElement('canvas');
+    c.width  = Math.round(img.width  * scale);
+    c.height = Math.round(img.height * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(blob => callback(blob), 'image/jpeg', 0.85);
+  };
+  img.src = dataUrl;
+}
+
+// Return the effective image URL for a role (custom or default)
+function imgSrc(role) {
+  const img = _imgs[role];
+  if (img && typeof img === 'string' && img.startsWith('data:image/')) {
+    return img;
+  }
+  return DEFAULT_IMGS[role];
+}
+
+// Sync the preview circle in the settings modal
+function syncPreview(role, dataUrl) {
+  const prev = document.getElementById(`prev-${role}`);
+  prev.style.backgroundImage = `url('${dataUrl || DEFAULT_IMGS[role]}')`;
+}
+
+function applySettings() {
+
+  // Sidebar settings button — show user avatar photo
+  const sbIcon = document.querySelector('.sb-set-icon');
+  if (sbIcon) {
+    sbIcon.style.cssText = `width:28px;height:28px;border-radius:8px;` +
+      `background:url('${imgSrc('user')}') center/cover no-repeat;` +
+      `font-size:0;flex-shrink:0`;
+  }
+
+  // Sync modal
+  document.getElementById('set-user-name').value = _settings.userName;
+  syncPreview('user', _imgs.user);
+  syncPreview('ai',   _imgs.ai);
+}
+
+function saveSettings() {
+  const un = document.getElementById('set-user-name').value.trim();
+  _settings.userName = un || DEFAULT_SETTINGS.userName;
+  localStorage.setItem('xb_settings', JSON.stringify(_settings));
+  applySettings();
+  refreshAvatarsInDOM();
+  closeSettings();
+}
+
+// Refresh all existing bubble avatars in the chat
+function refreshAvatarsInDOM() {
+  document.querySelectorAll('.av-u').forEach(el => applyAvToEl(el, 'user'));
+  document.querySelectorAll('.av-a').forEach(el => applyAvToEl(el, 'ai'));
+}
+function applyAvToEl(el, role) {
+  el.style.background = `url('${imgSrc(role)}') center/cover no-repeat`;
+  el.textContent = '';
+}
+
+// Build the full avatar <div> HTML string for chat bubbles
+function buildAvHTML(role) {
+  const cls = role === 'user' ? 'av av-u' : 'av av-a';
+  return `<div class="${cls}" style="background:url('${imgSrc(role)}') center/cover no-repeat"></div>`;
+}
+
+function openSettings() {
+  applySettings();
+  const overlay = document.getElementById('set-overlay');
+  const panel = document.getElementById('set-panel');
+  const sbFoot = document.querySelector('.sb-foot');
+  const sidebar = document.getElementById('sidebar');
+  
+  // 强制触发布局重绘，确保获取准确的位置信息
+  sidebar.offsetHeight; 
+  sbFoot.offsetHeight;
+  
+  // 获取元素相对于视口的位置（避免滚动偏移影响）
+  const sidebarRect = sidebar.getBoundingClientRect();
+  const sbFootRect = sbFoot.getBoundingClientRect();
+  
+  // 计算面板目标位置：
+  // 1. 宽度与侧边栏一致
+  // 2. 顶部 = sbFoot 顶部 - 面板自身高度（贴在foot上方）
+  // 3. 左侧与侧边栏对齐
+  panel.style.width = `${sidebarRect.width}px`;
+  panel.style.left = `${sidebarRect.left}px`;
+  
+  // 先隐藏面板计算高度，再设置最终top值（避免布局抖动）
+  panel.style.visibility = 'hidden';
+  panel.style.display = 'block';
+  const panelHeight = panel.offsetHeight;
+  panel.style.top = `${sbFootRect.top - panelHeight}px`;
+  panel.style.visibility = 'visible';
+  panel.style.display = '';
+  
+  panel.style.transition = 'transform .3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+  overlay.classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('set-overlay').classList.remove('open');
+}
+function overlayClose(e) {
+  if (e.target === document.getElementById('set-overlay')) closeSettings();
+}
+
+// File input handlers — upload → compress → store → refresh
+['user', 'ai'].forEach(role => {
+  document.getElementById(`inp-${role}-img`).addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      compressImg(e.target.result, compressed => {
+        // 错误点修复：将 Blob 转换为 base64 字符串存储
+        const reader2 = new FileReader();
+        reader2.onload = function(e2) {
+          // 存储 base64 字符串而非 Blob 对象
+          _imgs[role] = e2.target.result;
+          localStorage.setItem(`xb_${role}_img`, e2.target.result);
+          syncPreview(role, e2.target.result);
+          refreshAvatarsInDOM();
+          applySettings();
+        };
+        reader2.readAsDataURL(compressed);
+      });
+    };
+    reader.readAsDataURL(file);
+    this.value = ''; // 允许重新选择同一文件
+  });
+});
+
+/* ─────────────────────────────────────────
+   Time & Location
+───────────────────────────────────────── */
+function updateClock() {
+  const now = new Date();
+  const str = now.toLocaleString('zh-CN', {
+    year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false,
+  });
+  document.getElementById('ctx-time').textContent = str;
+  const locPart = document.getElementById('ctx-loc').textContent;
+  const locOk = !locPart.includes('定位') && !locPart.includes('失败') && !locPart.includes('拒绝');
+  let ctx = str;
+  if (locOk) ctx += ` | ${locPart}`;
+  if (_weatherStr) ctx += ` | ${_weatherStr}`;
+  ctxTimeLocation = ctx;
+}
+
+async function fetchWeather(city) {
+  try {
+    const r = await fetch(`${API}/api/weather?city=${encodeURIComponent(city)}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    _weatherStr = `${d.desc} ${d.temp_c}°C 湿度${d.humidity}% 风速${d.wind_kmph}km/h`;
+    document.getElementById('ctx-weather-icon').textContent = d.icon;
+    document.getElementById('ctx-weather-text').textContent =
+      `${d.desc} ${d.temp_c}°C (体感${d.feels_like}°C)`;
+    document.getElementById('ctx-weather-item').style.display = '';
+  } catch {}
+}
+
+async function fetchLocation() {
+  if (!navigator.geolocation) {
+    document.getElementById('ctx-loc').textContent = '浏览器不支持定位';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const { latitude: lat, longitude: lon } = pos.coords;
+    try {
+      const r = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh`
+      );
+      const d = await r.json();
+      const city = d.city || d.locality || '';
+      const loc = [city, d.countryName].filter(Boolean).join(', ');
+      document.getElementById('ctx-loc').textContent = loc || `${lat.toFixed(2)},${lon.toFixed(2)}`;
+      document.getElementById('ctx-dot').classList.remove('loading');
+      if (city) fetchWeather(city);
+    } catch {
+      document.getElementById('ctx-loc').textContent = `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+      document.getElementById('ctx-dot').classList.remove('loading');
+    }
+  }, () => {
+    document.getElementById('ctx-loc').textContent = '位置获取被拒绝';
+    document.getElementById('ctx-dot').classList.remove('loading');
+  });
+}
+
+updateClock();
+setInterval(updateClock, 1000);
+fetchLocation();
+
+/* ─────────────────────────────────────────
+   Textarea
+───────────────────────────────────────── */
+const inp = document.getElementById('msg-input');
+inp.addEventListener('input', () => {
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 130) + 'px';
+});
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+function sid() { return 'default'; }
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('hide');
+  // 如果设置面板已打开，同步更新位置
+  const overlay = document.getElementById('set-overlay');
+  if (overlay.classList.contains('open')) {
+    openSettings(); // 重新计算位置
+  }
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(s));
+  return d.innerHTML;
+}
+function fmtTime(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleString('zh-CN',
+      { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  } catch { return ''; }
+}
+
+/* ─────────────────────────────────────────
+   Memory helpers
+───────────────────────────────────────── */
+function setCount(n) {
+  document.getElementById('mem-badge').textContent = n;
+}
+
+function renderMemories(list) {
+  const el = document.getElementById('mem-body');
+  if (!list.length) {
+    el.innerHTML = `<div class="sb-sect-empty">暂无记忆</div>`;
+    return;
+  }
+  el.innerHTML = list.map(m => {
+    const txt = m.content.length > 100 ? m.content.slice(0, 100) + '…' : m.content;
+    return `<div class="mem-item">
+      <div class="mem-content">${esc(txt)}</div>
+      <div class="mem-time">${fmtTime(m.timestamp)}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadMemories() {
+  try {
+    const r = await fetch(`${API}/api/memories`);
+    const d = await r.json();
+    renderMemories(d.memories || []);
+    setCount(d.count || 0);
+  } catch {}
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}/api/stats`);
+    const d = await r.json();
+    setCount(d.memory_count || 0);
+    document.getElementById('s-hist').textContent    = d.history_count     || 0;
+    document.getElementById('cap-badge').textContent = d.capsule_count     || 0;
+    document.getElementById('ann-badge').textContent = d.anniversary_count || 0;
+  } catch {}
+}
+
+function prependMemories(mems) {
+  if (!mems || !mems.length) return;
+  const el = document.getElementById('mem-body');
+  const empty = el.querySelector('.sb-sect-empty');
+  if (empty) el.innerHTML = '';
+  mems.forEach(m => {
+    const content = typeof m === 'string' ? m : (m.content || '');
+    const txt = content.length > 100 ? content.slice(0, 100) + '…' : content;
+    const div = document.createElement('div');
+    div.className = 'mem-item fresh';
+    div.innerHTML = `<div class="mem-content">${esc(txt)}</div><div class="mem-time">刚刚提取</div>`;
+    el.insertBefore(div, el.firstChild);
+    setTimeout(() => div.classList.remove('fresh'), 4000);
+  });
+  // Auto-expand memory section when new items arrive
+  const body = document.getElementById('mem-body');
+  const head = document.getElementById('mem-head');
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    head.classList.add('open');
+  }
+}
+
+/* ─────────────────────────────────────────
+   Chat history persistence (localStorage)
+───────────────────────────────────────── */
+const CHAT_HISTORY_KEY = 'xb_chat_history';
+const COMPACT_THRESHOLD = 50;
+let _compacting = false;
+
+function loadChatHistory() {
+  try { return JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveChatHistory(msgs) {
+  try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(msgs)); }
+  catch (e) { console.warn('save chat history failed', e); }
+}
+function pushChatHistory(role, content) {
+  const h = loadChatHistory();
+  h.push({ role, content });
+  saveChatHistory(h);
+}
+function restoreChatHistory() {
+  const h = loadChatHistory();
+  if (!h.length) return;
+  h.forEach(m => appendBubble(m.role, m.content));
+}
+
+let _sessionSyncPromise = null;
+async function syncSessionToBackend() {
+  const h = loadChatHistory();
+  if (!h.length) return;
+  const last20 = h.slice(-20).map(m => ({
+    role: m.role === 'ai' ? 'assistant' : 'user',
+    content: m.content,
+  }));
+  try {
+    await fetch(`${API}/api/sessions/${sid()}/restore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: last20 }),
+    });
+  } catch (e) { console.warn('session restore failed', e); }
+}
+
+async function compactIfNeeded() {
+  if (_compacting) return;
+  const h = loadChatHistory();
+  if (h.length < COMPACT_THRESHOLD) return;
+  _compacting = true;
+  const toCompact = h.slice(0, COMPACT_THRESHOLD).map(m => ({
+    role: m.role === 'ai' ? 'assistant' : 'user',
+    content: m.content,
+  }));
+  const prev = document.getElementById('rag-status').textContent;
+  document.getElementById('rag-status').textContent = '整理中…';
+  try {
+    const compactBody = {
+      messages: toCompact,
+      provider: _selectedModel.providerId || 'gpt4novel',
+    };
+    if (_selectedModel.providerId === 'custom') {
+      const cc = loadCustomConfig();
+      compactBody.custom_base_url = cc.base_url || '';
+      compactBody.custom_api_key  = cc.api_key  || '';
+    }
+    const res = await fetch(`${API}/api/compact/${sid()}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(compactBody),
+    });
+    if (!res.ok) return;
+    const remaining = loadChatHistory().slice(COMPACT_THRESHOLD);
+    saveChatHistory(remaining);
+    const msgsEl = document.getElementById('msgs');
+    const groups = msgsEl.querySelectorAll('.msg-group');
+    const n = Math.min(COMPACT_THRESHOLD, groups.length);
+    for (let i = 0; i < n; i++) groups[i].remove();
+    loadMemories();
+    loadStats();
+  } catch (e) {
+    console.warn('compact failed', e);
+  } finally {
+    _compacting = false;
+    document.getElementById('rag-status').textContent = prev || '就绪';
+  }
+}
+
+/* ─────────────────────────────────────────
+   Send message (SSE streaming)
+───────────────────────────────────────── */
+async function sendMessage() {
+  if (busy) return;
+  if (_sessionSyncPromise) {
+    try { await _sessionSyncPromise; } catch {}
+    _sessionSyncPromise = null;
+  }
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+  appendBubble('user', msg);
+  pushChatHistory('user', msg);
+  const typId = showTyping();
+  busy = true;
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('rag-status').textContent = '检索中…';
+  try {
+    const chatBody = {
+      message: msg,
+      session_id: sid(),
+      model: getSelectedModelValue(),
+      provider: _selectedModel.providerId || 'gpt4novel',
+      time_location: ctxTimeLocation,
+    };
+    if (_selectedModel.providerId === 'custom') {
+      const cc = loadCustomConfig();
+      chatBody.custom_base_url = cc.base_url || '';
+      chatBody.custom_api_key  = cc.api_key  || '';
+      chatBody.custom_format   = cc.format   || 'openai';
+    }
+    const res = await fetch(`${API}/api/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(chatBody),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    removeTyping(typId);
+    const group = initStreamSession();   // 初始化逐段流式状态
+    let accumulated = '';
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf('\n')) !== -1) {
+        const line = buf.slice(0, idx).trim();
+        buf = buf.slice(idx + 1);
+        if (!line.startsWith('data: ')) continue;
+        let parsed;
+        try { parsed = JSON.parse(line.slice(6)); } catch { continue; }
+        if (parsed.type === 'token') {
+          accumulated += parsed.content;
+          pushStreamToken(accumulated);  // 逐段渲染，检测到 \n\n 即新建 bubble
+        } else if (parsed.type === 'patch_text') {
+          accumulated = parsed.clean_text || accumulated;
+          // 标签已剥离，做一次完整重绘以清除 tag 残留
+          renderAiBubbles(group, accumulated);
+        }
+      }
+    }
+
+    // 流结束后：去除任何标签残留，做最终规范化重绘
+    const aiClean = accumulated
+      .replace(/^\s*\]:\s*/, '')
+      .replace(/\[ANNIVERSARY\][\s\S]*?\[\/ANNIVERSARY\]/g, '')
+      .replace(/\[CAPSULE\][\s\S]*?\[\/CAPSULE\]/g, '')
+      .trim();
+    if (aiClean) {
+      renderAiBubbles(group, aiClean);
+      document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+      pushChatHistory('ai', aiClean);
+    }
+
+    document.getElementById('rag-status').textContent = '就绪';
+    compactIfNeeded();
+  } catch (e) {
+    if (typId) removeTyping(typId);
+    appendBubble('ai', `出错了：${e.message}`);
+    document.getElementById('rag-status').textContent = '就绪';
+  } finally {
+    busy = false;
+    document.getElementById('send-btn').disabled = false;
+    if (typId) {
+      setTimeout(() => removeTyping(typId), 100);
+    }
+  }
+}
+
+function splitIntoParagraphs(text) {
+  return text.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0);
+}
+
+function renderAiBubbles(group, text) {
+  const paras = splitIntoParagraphs(text);
+  group.innerHTML = '';
+  if (!paras.length) return;
+  paras.forEach((para, i) => {
+    const row = document.createElement('div');
+    row.className = 'msg-row ai' + (i > 0 ? ' para-extra' : '');
+    row.innerHTML = i === 0 ? buildAvHTML('ai') : '<div class="av-spacer"></div>';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble bubble-a';
+    bubble.innerHTML = marked.parse(para);
+    row.appendChild(bubble);
+    group.appendChild(row);
+  });
+}
+
+function appendBubble(role, content) {
+  const msgsEl = document.getElementById('msgs');
+  const group = document.createElement('div');
+  group.className = 'msg-group';
+
+  if (role === 'ai') {
+    renderAiBubbles(group, content);
+  } else {
+    const row = document.createElement('div');
+    row.className = 'msg-row user';
+    row.innerHTML = `${buildAvHTML('user')}<div class="bubble bubble-u">${esc(content)}</div>`;
+    group.appendChild(row);
+  }
+
+  msgsEl.appendChild(group);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function showTyping() {
+  const msgsEl = document.getElementById('msgs');
+  const typingEl = document.createElement('div');
+  typingEl.className = 'msg-group';
+  const typingId = Date.now();
+  typingEl.dataset.id = typingId;
+  
+  typingEl.innerHTML = `
+    <div class="msg-row ai">
+      <div class="av av-a" style="background:url('${imgSrc('ai')}') center/cover no-repeat"></div>
+      <div class="typing">
+        <div class="dot-t"></div>
+        <div class="dot-t"></div>
+        <div class="dot-t"></div>
+      </div>
+    </div>
+  `;
+  msgsEl.appendChild(typingEl);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  return typingId;
+}
+
+function removeTyping(id) {
+  const typingEl = document.querySelector(`.msg-group[data-id="${id}"]`);
+  if (typingEl) {
+    typingEl.remove();
+  }
+}
+
+/* ─────────────────────────────────────────
+   逐段流式渲染
+   每当检测到 \n\n 段落分隔，就把已完成的段落锁定到当前 bubble，
+   并新建下一个 bubble，实现"各段依次出现"的效果。
+───────────────────────────────────────── */
+let _sg = null;   // 当前流式 msg-group
+let _sb = null;   // 当前正在接收 token 的 bubble
+let _sp = 0;      // 已提交（锁定）的段落数
+
+function initStreamSession() {
+  const msgsEl = document.getElementById('msgs');
+  _sg = document.createElement('div');
+  _sg.className = 'msg-group';
+  const row = document.createElement('div');
+  row.className = 'msg-row ai';
+  row.innerHTML = buildAvHTML('ai');
+  _sb = document.createElement('div');
+  _sb.className = 'bubble bubble-a';
+  row.appendChild(_sb);
+  _sg.appendChild(row);
+  msgsEl.appendChild(_sg);
+  _sp = 0;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  return _sg;
+}
+
+function _appendStreamBubble() {
+  const row = document.createElement('div');
+  row.className = 'msg-row ai para-extra';
+  row.innerHTML = '<div class="av-spacer"></div>';
+  _sb = document.createElement('div');
+  _sb.className = 'bubble bubble-a';
+  row.appendChild(_sb);
+  _sg.appendChild(row);
+}
+
+function pushStreamToken(text) {
+  if (!_sg || !_sb) return;
+  const cleaned = text.replace(/^\s*\]:\s*/, '');
+  const parts   = cleaned.split(/\n\n+/);
+  const done    = parts.length - 1; // 已完成的段落数
+
+  // 把新完成的段落依次锁定到独立 bubble
+  while (_sp < done) {
+    const para = (parts[_sp] || '').trim();
+    if (para) {
+      _sb.innerHTML = marked.parse(para);
+      _appendStreamBubble();   // 为下一段新建 bubble
+    }
+    _sp++;
+  }
+
+  // 当前正在输入的段落——实时渲染到最后一个 bubble
+  _sb.innerHTML = marked.parse(parts[parts.length - 1] || '');
+  document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+}
+
+function toggleSection(type) {
+  const head = document.getElementById(`${type}-head`);
+  const body = document.getElementById(`${type}-body`);
+  head.classList.toggle('open');
+  body.classList.toggle('collapsed');
+}
+
+/* ─────────────────────────────────────────
+   人格控制
+───────────────────────────────────────── */
+
+function openPersonality() {
+  document.getElementById('pers-overlay').style.display = 'flex';
+  loadPersonalityConfig();
+}
+function closePersonality() {
+  document.getElementById('pers-overlay').style.display = 'none';
+}
+function overlayClosePersonality(e) {
+  if (e.target === document.getElementById('pers-overlay')) closePersonality();
+}
+
+// Tab 切换
+function switchPersTab(tab) {
+  document.querySelectorAll('.pers-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.pers-panel').forEach(p => p.classList.remove('active'));
+  const btn = document.querySelector(`.pers-tab[data-tab="${tab}"]`);
+  const panel = document.getElementById(`pers-panel-${tab}`);
+  if (btn) btn.classList.add('active');
+  if (panel) panel.classList.add('active');
+  if (tab === 'preview') refreshPersPreview();
+}
+
+// 从后端加载配置并填充表单
+async function loadPersonalityConfig() {
+  try {
+    const r = await fetch(`${API}/api/personality`);
+    if (!r.ok) return;
+    const cfg = await r.json();
+    fillPersonalityForm(cfg);
+  } catch (e) {
+    console.warn('[Personality] load error', e);
+  }
+}
+
+function fillPersonalityForm(cfg) {
+  // 身份
+  _setVal('p-identity-name',         cfg.identity?.name         || '');
+  _setVal('p-identity-background',   cfg.identity?.background   || '');
+  _setVal('p-identity-relationship', cfg.identity?.relationship || '');
+  // 性格
+  fillList('core_traits',         cfg.character?.core_traits         || []);
+  fillList('forbidden_tendencies',cfg.character?.forbidden_tendencies|| []);
+  // 语言
+  _setVal('p-language-style',          cfg.language?.style          || '');
+  _setVal('p-language-self_reference', cfg.language?.self_reference || '我');
+  _setVal('p-language-max_questions',  cfg.language?.max_questions_per_reply ?? 1);
+  _setCheck('p-language-emoji_allowed',       cfg.language?.emoji_allowed       ?? true);
+  _setVal('p-language-emoji_frequency',       cfg.language?.emoji_frequency     || '');
+  _setCheck('p-language-action_parentheses',  cfg.language?.action_parentheses  ?? true);
+  _setCheck('p-language-strikethrough_thoughts', cfg.language?.strikethrough_thoughts ?? true);
+  toggleEmojiFreqField(cfg.language?.emoji_allowed ?? true);
+  // 输出
+  fillList('format_rules',       cfg.output?.format_rules   || []);
+  // 互动
+  fillList('interaction_traits', cfg.interaction?.traits    || []);
+  // 禁令
+  fillList('prohibitions_items', cfg.prohibitions?.items    || []);
+  // 记忆
+  fillList('memory_priority_rules', cfg.memory_priority?.rules || []);
+  // 自检
+  _setCheck('p-self_check-enabled', cfg.self_check?.enabled ?? true);
+  fillList('self_check_steps',   cfg.self_check?.steps      || []);
+  // 防幻觉
+  _setCheck('p-anti_hallucination-enabled', cfg.anti_hallucination?.enabled ?? true);
+  fillList('anti_hallucination_rules', cfg.anti_hallucination?.rules || []);
+}
+
+function _setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+function _setCheck(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.checked = val;
+}
+
+function toggleEmojiFreqField(show) {
+  const el = document.getElementById('p-emoji-freq-field');
+  if (el) el.style.display = show ? 'block' : 'none';
+}
+
+// 渲染列表项
+function fillList(key, items) {
+  const el = document.getElementById(`list-${key}`);
+  if (!el) return;
+  el.innerHTML = items.map((item, i) => `
+    <div class="pers-list-item" data-list="${key}" data-idx="${i}">
+      <span class="pers-list-text">${_escH(item)}</span>
+      <button class="pers-list-del" title="删除" onclick="removeListItem('${key}',${i})">✕</button>
+    </div>`).join('');
+}
+
+function _escH(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function _getListItems(key) {
+  return Array.from(document.querySelectorAll(`[data-list="${key}"] .pers-list-text`))
+    .map(el => el.textContent);
+}
+
+function removeListItem(key, idx) {
+  const items = _getListItems(key);
+  items.splice(idx, 1);
+  fillList(key, items);
+}
+
+function addListItem(key) {
+  const inp = document.getElementById(`add-${key}`);
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val) return;
+  const items = _getListItems(key);
+  items.push(val);
+  fillList(key, items);
+  inp.value = '';
+  inp.style.height = 'auto';
+}
+
+// 从表单收集完整配置
+function collectPersonalityConfig() {
+  return {
+    identity: {
+      name:         (document.getElementById('p-identity-name')?.value         || '').trim(),
+      background:   (document.getElementById('p-identity-background')?.value   || '').trim(),
+      relationship: (document.getElementById('p-identity-relationship')?.value || '').trim(),
+    },
+    character: {
+      core_traits:          _getListItems('core_traits'),
+      forbidden_tendencies: _getListItems('forbidden_tendencies'),
+    },
+    language: {
+      style:                 (document.getElementById('p-language-style')?.value          || '').trim(),
+      self_reference:        (document.getElementById('p-language-self_reference')?.value || '我').trim(),
+      emoji_allowed:          document.getElementById('p-language-emoji_allowed')?.checked ?? true,
+      emoji_frequency:       (document.getElementById('p-language-emoji_frequency')?.value|| '').trim(),
+      action_parentheses:     document.getElementById('p-language-action_parentheses')?.checked ?? true,
+      strikethrough_thoughts: document.getElementById('p-language-strikethrough_thoughts')?.checked ?? true,
+      max_questions_per_reply: parseInt(document.getElementById('p-language-max_questions')?.value) || 1,
+    },
+    output: {
+      format_rules: _getListItems('format_rules'),
+    },
+    interaction: {
+      traits: _getListItems('interaction_traits'),
+    },
+    prohibitions: {
+      items: _getListItems('prohibitions_items'),
+    },
+    memory_priority: {
+      rules: _getListItems('memory_priority_rules'),
+    },
+    self_check: {
+      enabled: document.getElementById('p-self_check-enabled')?.checked ?? true,
+      steps:   _getListItems('self_check_steps'),
+    },
+    anti_hallucination: {
+      enabled: document.getElementById('p-anti_hallucination-enabled')?.checked ?? true,
+      rules:   _getListItems('anti_hallucination_rules'),
+    },
+  };
+}
+
+// 保存
+async function savePersonality() {
+  const cfg = collectPersonalityConfig();
+  const statusEl = document.getElementById('pers-status');
+  statusEl.textContent = '保存中…';
+  try {
+    const r = await fetch(`${API}/api/personality`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    statusEl.textContent = '✓ 已保存，立即生效';
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  } catch (e) {
+    statusEl.textContent = `保存失败: ${e.message}`;
+  }
+}
+
+// 重置为出厂默认
+async function resetPersonality() {
+  if (!confirm('确定要重置为出厂默认人格吗？当前所有自定义设置将丢失。')) return;
+  const statusEl = document.getElementById('pers-status');
+  statusEl.textContent = '重置中…';
+  try {
+    const r = await fetch(`${API}/api/personality/reset`, { method: 'POST' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    fillPersonalityForm(d.config);
+    statusEl.textContent = '✓ 已重置为默认人格';
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  } catch (e) {
+    statusEl.textContent = `重置失败: ${e.message}`;
+  }
+}
+
+// 预览 system prompt
+async function refreshPersPreview() {
+  const box = document.getElementById('pers-preview-box');
+  box.textContent = '加载中…';
+  try {
+    const r = await fetch(`${API}/api/personality/preview`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    box.textContent = d.prompt;
+  } catch (e) {
+    box.textContent = `加载失败: ${e.message}`;
+  }
+}
+
+// Esc 关闭人格面板
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const overlay = document.getElementById('pers-overlay');
+    if (overlay && overlay.style.display !== 'none') closePersonality();
+  }
+});
+
+/* ─────────────────────────────────────────
+   跨标签页同步：监听记忆管理道具的清除操作
+───────────────────────────────────────── */
+window.addEventListener('storage', e => {
+  // 记忆管理道具清空历史后，主界面自动清除气泡
+  if (e.key === CHAT_HISTORY_KEY && (e.newValue === null || e.newValue === '[]')) {
+    _clearChatDisplay();
+  }
+  // 哨兵值：道具在相同标签页调用时触发（storage 事件不触发自身页面）
+  if (e.key === 'xb_chat_cleared') {
+    _clearChatDisplay();
+  }
+});
+
+async function confirmClearChat() {
+  if (!confirm('确定清空所有聊天气泡？\n\n此操作不影响后端记忆，仅清除界面显示。')) return;
+  // 清除后端 in-memory 会话（避免残留上下文）
+  try {
+    const r = await fetch(`${API}/api/sessions`);
+    const d = await r.json();
+    await Promise.all((d.sessions || []).map(sid =>
+      fetch(`${API}/api/sessions/${sid}`, { method: 'DELETE' })
+    ));
+  } catch {}
+  _clearChatDisplay();
+}
+
+function _clearChatDisplay() {
+  const msgsEl = document.getElementById('msgs');
+  if (!msgsEl) return;
+  msgsEl.innerHTML = '';
+  // 重新显示欢迎语
+  const welcome = document.createElement('div');
+  welcome.id = 'welcome';
+  welcome.className = 'welcome';
+  welcome.innerHTML = `<div class="welcome-icon">👋</div><div class="welcome-text">聊天记录已清除，开始新的对话吧～</div>`;
+  msgsEl.appendChild(welcome);
+  // 清空 localStorage（以防其他逻辑还存着旧值）
+  saveChatHistory([]);
+}
+
+// 初始化加载
+loadSettings();
+restoreChatHistory();
+_sessionSyncPromise = syncSessionToBackend();
+loadMemories();
+loadStats();
+fetchConfiguredProviders(); // 预加载供应商配置状态
+</script>
+</body>
+</html>
